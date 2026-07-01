@@ -60,8 +60,8 @@ copy settings.example.json settings.json
     <img width="40%" src="images/screenshot_main2.png">
     <img width="40%" src="images/screenshot_range.png">
     <img width="40%" src="images/screenshot_settings.png">
-    <img width="40%" src="images/screenshot_connect.png">
     <img width="40%" src="images/screenshot_raw_console.png">
+    <img width="40%" src="images/screenshot_connect.png">
     <img width="40%" src="images/screenshot_mini_app.png">
 </p>
 
