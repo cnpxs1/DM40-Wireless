@@ -19,7 +19,7 @@ A Windows desktop app that connects over **Bluetooth Low Energy (BLE)** to the w
 
 ---
 
-## Installation for end users (no Python, command line etc.)
+## Running from Windows (Installation for end users, no Python)
 
 **1.** Open [Releases](https://github.com/Urobotos/DM40-Wireless/releases) on GitHub and download **`DM40-Wireless-win64.zip`**
 
@@ -47,7 +47,7 @@ Then start the app using one of these:
 |--------|-------------|
 | **`DM40 Wireless.bat`** | Recommended — runs `app.pyw` without a console (uses venv if present) |
 | **`app.pyw`** | Double-click or `pythonw app.pyw` — no console |
-| **`app.py`** | `python app.py` — with console (debugging, logs) |
+| **`app.py`** | PowerShell cmd: `python app.py` — with console (debugging, logs) |
 
 On first run, copy the settings template:
 
