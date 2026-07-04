@@ -13,6 +13,8 @@ A Windows desktop app that connects over **Bluetooth Low Energy (BLE)** to the w
 | `main` | Stable releases matching GitHub Releases |
 | `develop` | Active development, new features and fixes |
 
+<br>
+
 ---
 
 ## Requirements
@@ -20,6 +22,8 @@ A Windows desktop app that connects over **Bluetooth Low Energy (BLE)** to the w
 - **Windows 10/11** with working Bluetooth (BLE)
 - **Alientek DM40** multimeter (A / B / C) within range
 - To run from source: **Python 3.11+** ([python.org](https://www.python.org/)) — check *Add python to PATH* during installation
+
+<br>
 
 ---
 
@@ -35,6 +39,8 @@ A Windows desktop app that connects over **Bluetooth Low Energy (BLE)** to the w
 
 > The distribution package is the full `dist\DM40 Wireless` build folder (exe + libraries). Do not move the `.exe` alone — it must stay next to the `_internal` folder and `images`.
 
+<br>
+
 ---
 
 ## Running from source (developers)
@@ -45,6 +51,12 @@ cd DM40-Wireless
 install.bat
 ```
 
+On first run, copy the settings template:
+
+```bat
+copy settings.example.json settings.json
+```
+
 Then start the app using one of these:
 
 | Method | Description |
@@ -53,13 +65,10 @@ Then start the app using one of these:
 | **`app.pyw`** | Double-click or `pythonw app.pyw` — no console |
 | **`app.py`** | PowerShell cmd: `python app.py` — with console (debugging, logs) |
 
-On first run, copy the settings template:
-
-```bat
-copy settings.example.json settings.json
-```
+<br>
 
 ---
+
 ## App Screenshots:
 
 <p align="left" width="100%">
@@ -71,6 +80,8 @@ copy settings.example.json settings.json
     <img width="44%" src="images/screenshot_connect.png">
     <img width="44%" src="images/screenshot_mini_app.png">
 </p>
+
+<br>
 
 ---
 
@@ -111,6 +122,8 @@ Connection status, meter battery, and units are shown in the top bar from live B
 
 Changes are saved to `settings.json`.
 
+<br>
+
 ---
 
 ## Configuration (`settings.json`)
@@ -126,6 +139,8 @@ The file lives next to the exe or in the project root. It is not committed to gi
 | `mini_app` | Mini mode |
 | `always_on_top` | Always on top |
 | `raw_console` | RAW console |
+
+<br>
 
 ---
 
@@ -146,6 +161,8 @@ To publish a release on GitHub:
 3. Attach **`DM40-Wireless-win64.zip`** as a release asset.
 4. Source code stays in the repo; users download the zip, developers clone the repo.
 
+<br>
+
 ---
 
 ## Project structure
@@ -163,11 +180,15 @@ DM40-Wireless/
 └── release_zip.bat
 ```
 
+<br>
+
 ---
 
 ## License
 
 This project is licensed under the [MIT License](LICENSE) — Copyright (c) 2026 Urobotos.
+
+<br>
 
 ---
 
