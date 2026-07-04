@@ -43,6 +43,10 @@ Desktop.ini
 sniffing.txt
 nRF_connect_ble_log.txt
 
+# Zálohy
+images/Photoshop/
+*.psd
+
 # Release artefakty (zip vytváří release_zip.bat)
 release/
 *.zip
