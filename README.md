@@ -1,5 +1,9 @@
 # DM40 Wireless
 
+<p align="center" width="100%">
+    <img width="40%" src="images/alientek.png">
+</p>
+
 A Windows desktop app that connects over **Bluetooth Low Energy (BLE)** to the wireless **Alientek DM40** multimeter (DM40A, DM40B, DM40C). The UI mirrors the device display, including measurement modes, ranges, HOLD, and saved values.
 
 **Repository:** [github.com/Urobotos/DM40-Wireless](https://github.com/Urobotos/DM40-Wireless)
@@ -86,7 +90,7 @@ copy settings.example.json settings.json
 | **RUN / HOLD** (top bar on left) | Toggles measurement hold |
 | **MODE buttons** (bottom row) | Cycle sub-modes: VDC/VAC, ADC/AAC, OHM, CAP, DIODE/CONT, Hz/TEMP |
 | **Display digits** | Click saves the current reading to the first free **save slot** (max. 6) |
-| **Save slots** | Click on the display digits to save values ​​to slots, hold display digits to clear slots |
+| **Save slots** | Click on the display digits to save values ​​to slots, hold on display digits to clear slots |
 | **Graph** | Live measurement plot (hidden in Mini app mode), hold in the graph area to clear it |
 | **Settings icon** (top bar on right) | Opens **Settings** |
 
