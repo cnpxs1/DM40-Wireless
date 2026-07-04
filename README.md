@@ -86,7 +86,7 @@ copy settings.example.json settings.json
 | **RUN / HOLD** (top bar on left) | Toggles measurement hold |
 | **MODE buttons** (bottom row) | Cycle sub-modes: VDC/VAC, ADC/AAC, OHM, CAP, DIODE/CONT, Hz/TEMP |
 | **Display digits** | Click saves the current reading to the first free **save slot** (max. 6) |
-| **Save slots** | Click on the display digits to save values ​​to slots, hold display digits to clear slots |
+| **Save slots** | Click on the display digits to save values ​​to slots, hold on display digits to clear slots |
 | **Graph** | Live measurement plot (hidden in Mini app mode), hold in the graph area to clear it |
 | **Settings icon** (top bar on right) | Opens **Settings** |
 
