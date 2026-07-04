@@ -17,7 +17,7 @@ A Windows desktop app that connects over **Bluetooth Low Energy (BLE)** to the w
 
 ---
 
-## Requirements
+## Requirements:
 
 - **Windows 10/11** with working Bluetooth (BLE)
 - **Alientek DM40** multimeter (A / B / C) within range
@@ -27,7 +27,7 @@ A Windows desktop app that connects over **Bluetooth Low Energy (BLE)** to the w
 
 ---
 
-## Running from Windows (Installation for end users)
+## Running from Windows (Installation for end users):
 
 **1.** Open [Releases](https://github.com/Urobotos/DM40-Wireless/releases) on GitHub and download **`DM40-Wireless-win64.zip`**
 
@@ -43,7 +43,7 @@ A Windows desktop app that connects over **Bluetooth Low Energy (BLE)** to the w
 
 ---
 
-## Running from source (developers)
+## Running from source (developers):
 
 ```bat
 git clone -b develop https://github.com/Urobotos/DM40-Wireless.git
@@ -85,7 +85,7 @@ Then start the app using one of these:
 
 ---
 
-## Using the app
+## Using the app:
 
 ### Connect screen (first launch / empty MAC)
 
@@ -95,15 +95,19 @@ Then start the app using one of these:
 
 ### Main screen
 
+<p align="left" width="100%">
+    <img width="50%" src="images/manual.png">
+</p>
+
 | Area | Action |
 |------|--------|
-| **AUTO+** (top bar on left) | Opens the **RANGE screen** menu for the current mode |
-| **RUN / HOLD** (top bar on left) | Toggles measurement hold |
-| **MODE buttons** (bottom row) | Cycle sub-modes: VDC/VAC, ADC/AAC, OHM, CAP, DIODE/CONT, Hz/TEMP |
-| **Display digits** | Click saves the current reading to the first free **save slot** (max. 6) |
-| **Save slots** | Click on the display digits to save values ​​to slots, hold on display digits to clear slots |
-| **Graph** | Live measurement plot (hidden in Mini app mode), hold in the graph area to clear it |
-| **Settings icon** ⚙️ | Opens **Settings screen** |
+| **1. AUTO+** | Opens the **RANGE screen** menu for the current mode |
+| **2. RUN / HOLD** | Toggles measurement hold |
+| **3. MODE buttons** | Cycle sub-modes: VDC/VAC, ADC/AAC, OHM, CAP, DIODE/CONT, Hz/TEMP |
+| **4. Display digits** | Main display digits |
+| **5. Save slots** | Click on the **display digits** to save values ​​to slots (max. 6), hold on display digits to clear slots |
+| **6. Graph** | Live measurement plot (hidden in Mini app mode), hold in the graph area to clear it |
+| **7. Settings icon** ⚙️ | Opens **Settings screen** |
 
 Connection status, meter battery, and units are shown in the top bar from live BLE data.
 
@@ -112,7 +116,7 @@ Connection status, meter battery, and units are shown in the top bar from live B
 - List of ranges for the current measurement mode (depends on DM40A/B/C model)
 - **Back** — return to the main screen
 
-### Settings screen
+### Settings screen:
 
 | Toggle | Function |
 |--------|----------|
@@ -126,7 +130,7 @@ Changes are saved to `settings.json`.
 
 ---
 
-## Configuration (`settings.json`)
+## Configuration (`settings.json`):
 
 The file lives next to the exe or in the project root. It is not committed to git — use `settings.example.json` as a template.
 
@@ -144,7 +148,7 @@ The file lives next to the exe or in the project root. It is not committed to gi
 
 ---
 
-## Building the exe and release zip (maintainers)
+## Building the exe and release zip (maintainers):
 
 ```bat
 build_exe.bat
@@ -165,7 +169,7 @@ To publish a release on GitHub:
 
 ---
 
-## Project structure
+## Project structure:
 
 ```
 DM40-Wireless/
@@ -184,7 +188,7 @@ DM40-Wireless/
 
 ---
 
-## License
+## License:
 
 This project is licensed under the [MIT License](LICENSE) — Copyright (c) 2026 Urobotos.
 
@@ -192,7 +196,7 @@ This project is licensed under the [MIT License](LICENSE) — Copyright (c) 2026
 
 ---
 
-## Notes
+## Notes:
 
 - This is not an official Alientek product; it is a community / enthusiast project.
 - Bluetooth must be enabled in Windows; if BT is off, the app shows a warning.
