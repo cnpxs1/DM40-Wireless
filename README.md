@@ -97,13 +97,13 @@ Then start the app using one of these:
 
 | Area | Action |
 |------|--------|
-| **AUTO+** (top bar on left) | Opens the **range** (RANGE) menu for the current mode |
+| **AUTO+** (top bar on left) | Opens the **RANGE screen** menu for the current mode |
 | **RUN / HOLD** (top bar on left) | Toggles measurement hold |
 | **MODE buttons** (bottom row) | Cycle sub-modes: VDC/VAC, ADC/AAC, OHM, CAP, DIODE/CONT, Hz/TEMP |
 | **Display digits** | Click saves the current reading to the first free **save slot** (max. 6) |
 | **Save slots** | Click on the display digits to save values ​​to slots, hold on display digits to clear slots |
 | **Graph** | Live measurement plot (hidden in Mini app mode), hold in the graph area to clear it |
-| **Settings icon** (top bar on right) | Opens **Settings** |
+| **Settings icon** ⚙️ | Opens **Settings screen** |
 
 Connection status, meter battery, and units are shown in the top bar from live BLE data.
 
