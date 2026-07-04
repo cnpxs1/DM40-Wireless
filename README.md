@@ -13,17 +13,21 @@ A Windows desktop app that connects over **Bluetooth Low Energy (BLE)** to the w
 | `main` | Stable releases matching GitHub Releases |
 | `develop` | Active development, new features and fixes |
 
+<br>
+
 ---
 
-## Requirements
+## Requirements:
 
 - **Windows 10/11** with working Bluetooth (BLE)
 - **Alientek DM40** multimeter (A / B / C) within range
 - To run from source: **Python 3.11+** ([python.org](https://www.python.org/)) — check *Add python to PATH* during installation
 
+<br>
+
 ---
 
-## Running from Windows (Installation for end users)
+## Running from Windows (Installation for end users):
 
 **1.** Open [Releases](https://github.com/Urobotos/DM40-Wireless/releases) on GitHub and download **`DM40-Wireless-win64.zip`**
 
@@ -35,14 +39,22 @@ A Windows desktop app that connects over **Bluetooth Low Energy (BLE)** to the w
 
 > The distribution package is the full `dist\DM40 Wireless` build folder (exe + libraries). Do not move the `.exe` alone — it must stay next to the `_internal` folder and `images`.
 
+<br>
+
 ---
 
-## Running from source (developers)
+## Running from source (developers):
 
 ```bat
 git clone -b develop https://github.com/Urobotos/DM40-Wireless.git
 cd DM40-Wireless
 install.bat
+```
+
+On first run, copy the settings template:
+
+```bat
+copy settings.example.json settings.json
 ```
 
 Then start the app using one of these:
@@ -53,13 +65,10 @@ Then start the app using one of these:
 | **`app.pyw`** | Double-click or `pythonw app.pyw` — no console |
 | **`app.py`** | PowerShell cmd: `python app.py` — with console (debugging, logs) |
 
-On first run, copy the settings template:
-
-```bat
-copy settings.example.json settings.json
-```
+<br>
 
 ---
+
 ## App Screenshots:
 
 <p align="left" width="100%">
@@ -72,9 +81,11 @@ copy settings.example.json settings.json
     <img width="44%" src="images/screenshot_mini_app.png">
 </p>
 
+<br>
+
 ---
 
-## Using the app
+## Using the app:
 
 ### Connect screen (first launch / empty MAC)
 
@@ -84,15 +95,19 @@ copy settings.example.json settings.json
 
 ### Main screen
 
+<p align="left" width="100%">
+    <img width="45%" src="images/manual.png">
+</p>
+
 | Area | Action |
 |------|--------|
-| **AUTO+** (top bar on left) | Opens the **range** (RANGE) menu for the current mode |
-| **RUN / HOLD** (top bar on left) | Toggles measurement hold |
-| **MODE buttons** (bottom row) | Cycle sub-modes: VDC/VAC, ADC/AAC, OHM, CAP, DIODE/CONT, Hz/TEMP |
-| **Display digits** | Click saves the current reading to the first free **save slot** (max. 6) |
-| **Save slots** | Click on the display digits to save values ​​to slots, hold on display digits to clear slots |
-| **Graph** | Live measurement plot (hidden in Mini app mode), hold in the graph area to clear it |
-| **Settings icon** (top bar on right) | Opens **Settings** |
+| **1. AUTO+** | Opens the **RANGE screen** menu for the current mode |
+| **2. RUN / HOLD** | Toggles measurement hold |
+| **3. MODE buttons** | Cycle sub-modes: VDC/VAC, ADC/AAC, OHM, CAP, DIODE/CONT, Hz/TEMP |
+| **4. Display digits** | Main display digits |
+| **5. Save slots** | Click on the **display digits** to save values ​​to slots (max. 6), hold on display digits to clear slots |
+| **6. Graph** | Live measurement plot (hidden in Mini app mode), hold in the graph area to clear it |
+| **7. Settings icon** ⚙️ | Opens **Settings screen** |
 
 Connection status, meter battery, and units are shown in the top bar from live BLE data.
 
@@ -101,7 +116,7 @@ Connection status, meter battery, and units are shown in the top bar from live B
 - List of ranges for the current measurement mode (depends on DM40A/B/C model)
 - **Back** — return to the main screen
 
-### Settings screen
+### Settings screen:
 
 | Toggle | Function |
 |--------|----------|
@@ -111,9 +126,11 @@ Connection status, meter battery, and units are shown in the top bar from live B
 
 Changes are saved to `settings.json`.
 
+<br>
+
 ---
 
-## Configuration (`settings.json`)
+## Configuration (`settings.json`):
 
 The file lives next to the exe or in the project root. It is not committed to git — use `settings.example.json` as a template.
 
@@ -127,9 +144,11 @@ The file lives next to the exe or in the project root. It is not committed to gi
 | `always_on_top` | Always on top |
 | `raw_console` | RAW console |
 
+<br>
+
 ---
 
-## Building the exe and release zip (maintainers)
+## Building the exe and release zip (maintainers):
 
 ```bat
 build_exe.bat
@@ -146,9 +165,11 @@ To publish a release on GitHub:
 3. Attach **`DM40-Wireless-win64.zip`** as a release asset.
 4. Source code stays in the repo; users download the zip, developers clone the repo.
 
+<br>
+
 ---
 
-## Project structure
+## Project structure:
 
 ```
 DM40-Wireless/
@@ -163,15 +184,19 @@ DM40-Wireless/
 └── release_zip.bat
 ```
 
+<br>
+
 ---
 
-## License
+## License:
 
 This project is licensed under the [MIT License](LICENSE) — Copyright (c) 2026 Urobotos.
 
+<br>
+
 ---
 
-## Notes
+## Notes:
 
 - This is not an official Alientek product; it is a community / enthusiast project.
 - Bluetooth must be enabled in Windows; if BT is off, the app shows a warning.
