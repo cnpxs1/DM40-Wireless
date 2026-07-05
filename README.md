@@ -74,8 +74,6 @@ Then start the app using one of these:
 <p align="left" width="100%">
     <img width="44%" src="images/screenshot_main.png">
     <img width="44%" src="images/screenshot_main2.png">
-    <img width="44%" src="images/screenshot_range.png">
-    <img width="44%" src="images/screenshot_settings.png">
     <img width="44%" src="images/screenshot_raw_console.png">
     <img width="44%" src="images/screenshot_mini_app.png">
 </p>
@@ -86,15 +84,15 @@ Then start the app using one of these:
 
 ## Using the app:
 
-### Connect screen (first launch / empty MAC)
+### Connect screen (first launch / empty MAC):
 
-<img width="44%" src="images/screenshot_connect.png">
+<img width="39%" src="images/screenshot_connect.png">
 
 - **Search** — scan for nearby DM40 BLE devices
 - Click a list row — select a device
 - **Connect** — save MAC and model, connect, and go to the main screen
 
-### Main screen
+### Main screen:
 
 <p align="left" width="100%">
     <img width="54%" src="images/manual.png">
@@ -113,12 +111,16 @@ Then start the app using one of these:
 
 Connection status, meter battery, and units are shown in the top bar from live BLE data.
 
-### RANGE screen
+### RANGE screen:
+
+<img width="39%" src="images/screenshot_range.png">
 
 - List of ranges for the current measurement mode (depends on DM40A/B/C model)
 - **Back** — return to the main screen
 
 ### Settings screen:
+
+<img width="39%" src="images/screenshot_settings.png">
 
 | Toggle | Function |
 |--------|----------|
