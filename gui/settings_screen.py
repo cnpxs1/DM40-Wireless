@@ -84,22 +84,13 @@ class SettingsScreen(tk.Frame):
 
         self.raise_click_layer()
 
-    def _place_row(
-        self,
-        x: int,
-        y: int,
-        w: int,
-        h: int,
-        key: str,
-        label: str,
-        enabled: bool,
-        label_font: tuple,
-        state_font: tuple,
-    ) -> None:
+    def _row_frame(self, key: str, x: int, y: int, w: int, h: int, label: str, label_font: tuple) -> tuple[int, int, int, int, int]:
+        """绘制行背景和左侧标签，返回 (rx, ry, rw, rh, cy) 供右侧内容使用。"""
         rx, ry, rw, rh = self._s(x), self._s(y), self._s(w), self._s(h)
         self.canvas.create_rectangle(
             rx, ry, rx + rw, ry + rh,
-            fill=rgb_hex("range_buttons"), outline="", tags=("settings_row", f"settings_bg_{key}"),
+            fill=rgb_hex("range_buttons"), outline="",
+            tags=("settings_row", f"settings_bg_{key}"),
         )
         cy = ry + rh // 2
         pad_l = self._s(SL.SETTINGS_ROW_MARGIN)
@@ -108,6 +99,15 @@ class SettingsScreen(tk.Frame):
             fill=rgb_hex("text_primary"), anchor="w", font=label_font,
             tags=("settings_row", f"settings_lbl_{key}"),
         )
+        return rx, ry, rw, rh, cy
+
+    def _place_row(
+        self,
+        x: int, y: int, w: int, h: int,
+        key: str, label: str, enabled: bool,
+        label_font: tuple, state_font: tuple,
+    ) -> None:
+        rx, ry, rw, rh, cy = self._row_frame(key, x, y, w, h, label, label_font)
 
         switch = self.sprites.settings_sprite(
             "switch_on.png" if enabled else "switch_off.png",
@@ -134,7 +134,6 @@ class SettingsScreen(tk.Frame):
             fill=state_color, anchor="e", font=state_font,
             tags=("settings_row", f"settings_state_{key}"),
         )
-
         bind_clickable(
             self.canvas, rx, ry, rw, rh,
             lambda k=key: self._toggle(k), tag=f"settings_hit_{key}",
@@ -150,6 +149,7 @@ class SettingsScreen(tk.Frame):
         """打开文件对话框导入语言配置文件，更新 settings.json。"""
         from tkinter import filedialog, messagebox
         from pathlib import Path
+        import tomllib
 
         path = filedialog.askopenfilename(
             title=t("settings.import_title"),
@@ -167,7 +167,6 @@ class SettingsScreen(tk.Frame):
         # 读取内容验证 TOML 格式
         try:
             content = src.read_text("utf-8")
-            import tomllib
             tomllib.loads(content)
         except OSError as exc:
             messagebox.showerror(
@@ -205,21 +204,8 @@ class SettingsScreen(tk.Frame):
         label_font: tuple, state_font: tuple,
     ) -> None:
         """绘制语言行：显示 settings.json 中的当前语言代码，点击导入新语言文件。"""
-        rx, ry, rw, rh = self._s(x), self._s(y), self._s(w), self._s(h)
-        self.canvas.create_rectangle(
-            rx, ry, rx + rw, ry + rh,
-            fill=rgb_hex("range_buttons"), outline="",
-            tags=("settings_row", f"settings_bg_{key}"),
-        )
-        cy = ry + rh // 2
-        pad_l = self._s(SL.SETTINGS_ROW_MARGIN)
-        self.canvas.create_text(
-            rx + pad_l, cy, text=label,
-            fill=rgb_hex("text_primary"), anchor="w", font=label_font,
-            tags=("settings_row", f"settings_lbl_{key}"),
-        )
-        # 从 settings.json 读取当前语言代码作为显示
-        lang_code = (self.app.settings.get("language") or "").strip() or "en-us"
+        rx, ry, rw, rh, cy = self._row_frame(key, x, y, w, h, label, label_font)
+        lang_code = (self.app.settings.get("language") or "").strip() or "en-US"
         i18n = get_i18n()
         available = i18n.available_languages()
         display = available.get(lang_code, lang_code)

@@ -181,6 +181,7 @@ def get_i18n() -> _I18n:
     global _i18n_instance
     if _i18n_instance is None:
         _i18n_instance = _I18n()
+    assert _i18n_instance is not None
     return _i18n_instance
 
 
