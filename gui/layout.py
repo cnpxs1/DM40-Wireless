@@ -71,7 +71,7 @@ SEC_FONT = 17                    # Výška textu AUX1 a AUX2 displeje
 # --- Hlavní řádek číslic (mezi aux displeji a grafem) ---
 MAIN_VALUE_ROW_CY = 89           # vertikální střed řádku (od vrchu okna), center Y
 MAIN_VALUE_ROW_H = 55
-MAIN_VALUE_FONT = 55
+MAIN_VALUE_FONT = 50
 MAIN_BT_OFF_FONT = 18            # „Turn ON Bluetooth“ – musí se vejít na šířku řádku
 MAIN_SIGN_W = 22                 # červená oblast – sloupec „ “ / „-“
 MAIN_DIGITS_W = 250              # zelená oblast – číslice / OL

@@ -48,8 +48,10 @@ A Windows desktop app that connects over **Bluetooth Low Energy (BLE)** to the w
 ```bat
 git clone -b develop https://github.com/Urobotos/DM40-Wireless.git
 cd DM40-Wireless
-install.bat
+.\install.bat
 ```
+
+*(install.bat creates .venv and installs dependencies from requirements.txt)*
 
 On first run, copy the settings template:
 
@@ -62,8 +64,7 @@ Then start the app using one of these:
 | Method | Description |
 |--------|-------------|
 | **`DM40 Wireless.bat`** | Recommended — runs `app.pyw` without a console (uses venv if present) |
-| **`app.pyw`** | Double-click or `pythonw app.pyw` — no console |
-| **`app.py`** | PowerShell cmd: `python app.py` — with console (debugging, logs) |
+| **`app.py`** | PowerShell cmd: `.\.venv\Scripts\python.exe app.py` — with console (debugging, logs) |
 
 <br>
 

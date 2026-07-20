@@ -7,6 +7,7 @@ import tkinter as tk
 from ble.worker import BleCallbacks, BleWorker
 from core.config import CMD_DISCOVERY, CMD_POLL
 from core.protocol_constants import CMD_ID
+from core.i18n import t, get_i18n
 from gui import layout as display_layout
 from core.modes import MODE_CYCLE_GROUPS, ModeState
 from core.parsing import MODEL, range_label_from_packet
@@ -27,6 +28,10 @@ class DM40App:
         self.root = root
         self.settings = load_settings()
         apply_saved_model(self.settings)
+
+        # 从 settings.json 读取语言配置初始化 i18n
+        lang = (self.settings.get("language") or "").strip() or "en-US"
+        get_i18n().init(lang)
         self.scale = float(self.settings.get("window_scale", 1.0))
         self.mode_state = ModeState()
         for gid, opts in MODE_CYCLE_GROUPS:
@@ -36,7 +41,7 @@ class DM40App:
         self._current_screen = "main"
         self._client_w = int(display_layout.SCREEN_W * self.scale)
 
-        self.root.title("DM40 Wireless")
+        self.root.title(t("app.title"))
         self.root.resizable(False, False)
         self.root.configure(bg=rgb_hex("background"))
 
@@ -112,6 +117,34 @@ class DM40App:
             self._ble_started = True
         self.setup_screen.on_hide()
         self.show_main_screen()
+
+    def reload_language(self, lang_code: str) -> None:
+        """切换语言并刷新全部可见界面，同时更新 settings.json。"""
+        i18n = get_i18n()
+        if not i18n.load_language(lang_code):
+            return
+        # 原子写入 settings.json（先 .tmp 再替换，防止写坏）
+        self.settings["language"] = lang_code
+        from gui.settings import save_settings
+        if not save_settings(self.settings):
+            # 保存失败不阻塞 UI 刷新，内存中的语言设置当前会话仍生效
+            pass
+        # 刷新 UI
+        self.root.title(t("app.title"))
+        self._refresh_visible_screen()
+
+    def _refresh_visible_screen(self) -> None:
+        """根据当前屏幕重建 UI 以反映新语言。"""
+        if self._current_screen == "main":
+            self.main_screen.refresh_all()
+        elif self._current_screen == "range":
+            kind = self.mode_state.get_active_kind()
+            self.range_screen.rebuild_for_kind(kind, self._last_range_flag)
+        elif self._current_screen == "settings":
+            self.settings_screen.rebuild()
+        elif self._current_screen == "setup":
+            self.setup_screen.refresh_all()
+        self._apply_window_size()
 
     def show_setup_screen(self, *, auto_scan: bool = False) -> None:
         self._current_screen = "setup"
