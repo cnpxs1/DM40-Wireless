@@ -30,6 +30,13 @@ VOLTAGE_RANGE_SLOT = {
     0x80: 0, 0x88: 1, 0x90: 2, 0x98: 3, 0xA0: 4,
 }
 
+def range_screen_title(kind: str) -> str:
+    """返回给定测量类型的量程界面标题（已国际化）。"""
+    from core.i18n import t
+    key = kind.replace("+", "_plus_")
+    return t(f"range_titles.{key}")
+
+# 保留 RANGE_SCREEN_TITLES 作为向后兼容的默认回退
 RANGE_SCREEN_TITLES = {
     "VDC": "Voltage Settings",
     "VAC": "Voltage Settings",

@@ -1,49 +1,55 @@
 # DM40 Wireless
 
-<p align="center" width="100%">
-    <img width="50%" src="images/alientek.png">
+<p align="center">
+    <img width="50%" src="images/alientek.png" alt="Alientek logo">
 </p>
 
-A Windows desktop app that connects over **Bluetooth Low Energy (BLE)** to the wireless **Alientek DM40** multimeter (DM40A, DM40B, DM40C). The UI mirrors the device display, including measurement modes, ranges, HOLD, and saved values.
+一款 Windows 桌面应用程序，通过**低功耗蓝牙（BLE）**连接无线**正点原子（Alientek）DM40**万用表（支持 DM40A / DM40B / DM40C）。界面完整复现设备显示屏内容，包括测量模式、量程、HOLD 保持状态及已保存的数值。
 
-**Repository:** [github.com/Urobotos/DM40-Wireless](https://github.com/Urobotos/DM40-Wireless)
+**仓库地址：** [Urobotos/DM40-Wireless](https://github.com/Urobotos/DM40-Wireless)
 
-| Branch | Purpose |
-|--------|---------|
-| `main` | Stable releases matching GitHub Releases |
-| `develop` | Active development, new features and fixes |
+**原作者：** [zacharcc](https://github.com/zacharcc)
 
-<br>
+| 分支 | 用途 |
+|------|------|
+| `main` | 稳定发布版，与 GitHub Releases 同步 |
+| `dev` | 活跃开发分支，新功能与问题修复 |
 
----
-
-## Requirements:
-
-- **Windows 10/11** with working Bluetooth (BLE)
-- **Alientek DM40** multimeter (A / B / C) within range
-- To run from source: **Python 3.11+** ([python.org](https://www.python.org/)) — check *Add python to PATH* during installation
+> 本分支在原作者 [zacharcc](https://github.com/zacharcc) 的基础上新增了**多语言适配**功能，内置简体中文、繁體中文、英文三套界面语言，支持运行时动态切换。用户也可通过设置界面**导入自定义 TOML 语言文件**，无需修改代码即可扩展至任意语言。
+>
+> 本分支的修改由 **AI 辅助完成**。
 
 <br>
 
 ---
 
-## Running from Windows (Installation for end users):
+## 环境要求：
 
-**1.** Open [Releases](https://github.com/Urobotos/DM40-Wireless/releases) on GitHub and download **`DM40-Wireless-win64.zip`**
-
-**2.** Extract the zip to any folder (e.g. `C:\Apps\DM40 Wireless\`)
-
-**3.** Run **`DM40 Wireless.exe`**
-
-**4.** On first launch, the **Connect** screen appears — search for your meter, select it in the list, and click **Connect**. The MAC address is saved to `settings.json` next to the exe; on the next launch the app connects automatically.
-
-> The distribution package is the full `dist\DM40 Wireless` build folder (exe + libraries). Do not move the `.exe` alone — it must stay next to the `_internal` folder and `images`.
+- **Windows 10/11** 操作系统，蓝牙（BLE）功能正常
+- **正点原子 DM40** 万用表（A / B / C 型），需在有效范围内
+- 从源码运行需安装 **Python 3.11+**（[python.org](https://www.python.org/)）—— 安装时请勾选 *将 Python 添加到 PATH*
 
 <br>
 
 ---
 
-## Running from source (developers):
+## 在 Windows 上运行（面向最终用户）：
+
+**1.** 打开 GitHub 上的 [Releases](https://github.com/Urobotos/DM40-Wireless/releases) 页面，下载 **`DM40-Wireless-win64.zip`**
+
+**2.** 将压缩包解压到任意文件夹（如 `C:\Apps\DM40 Wireless\`）
+
+**3.** 运行 **`DM40 Wireless.exe`**
+
+**4.** 首次启动时，将显示**连接**界面 —— 搜索附近的万用表，在列表中选择设备，点击**连接**。MAC 地址将保存至可执行文件所在目录的 `settings.json` 中；下次启动时应用会自动连接。
+
+> 发布包为完整的 `dist\DM40 Wireless` 构建文件夹（exe + 依赖库）。请勿单独移动 `.exe` 文件 —— 它必须与 `_internal` 文件夹及 `images` 目录放在一起。
+
+<br>
+
+---
+
+## 从源码运行（面向开发者）：
 
 ```bat
 git clone -b develop https://github.com/Urobotos/DM40-Wireless.git
@@ -51,171 +57,172 @@ cd DM40-Wireless
 install.bat
 ```
 
-On first run, copy the settings template:
+首次运行时，请复制配置模板：
 
 ```bat
 copy settings.example.json settings.json
 ```
 
-Then start the app using one of these:
+然后通过以下任一方式启动应用：
 
-| Method | Description |
-|--------|-------------|
-| **`DM40 Wireless.bat`** | Recommended — runs `app.pyw` without a console (uses venv if present) |
-| **`app.pyw`** | Double-click or `pythonw app.pyw` — no console |
-| **`app.py`** | PowerShell cmd: `python app.py` — with console (debugging, logs) |
+| 方式 | 说明 |
+|------|------|
+| **`DM40 Wireless.bat`** | 推荐方式 —— 运行 `app.pyw`，无控制台窗口（如存在 venv 则自动使用） |
+| **`app.pyw`** | 双击运行或执行 `pythonw app.pyw` —— 无控制台窗口 |
+| **`app.py`** | 在 PowerShell 中执行 `python app.py` —— 带控制台窗口（用于调试、查看日志） |
 
 <br>
 
 ---
 
-## App Screenshots:
+## 应用截图：
 
-<p align="left" width="100%">
-    <img width="44%" src="images/screenshot_main.png">
-    <img width="44%" src="images/screenshot_main2.png">
-    <img width="44%" src="images/screenshot_raw_console.png">
-    <img width="44%" src="images/screenshot_mini_app.png">
+<p align="left">
+    <img width="44%" src="images/screenshot_main.png" alt="Main screen">
+    <img width="44%" src="images/screenshot_main2.png" alt="Main screen 2">
+    <img width="44%" src="images/screenshot_raw_console.png" alt="RAW console">
+    <img width="44%" src="images/screenshot_mini_app.png" alt="Mini app">
 </p>
 
 <br>
 
 ---
 
-## Using the app:
+## 使用说明：
 
-### Connect screen (first launch / empty MAC):
+### 连接界面（首次启动 / MAC 地址为空时）：
 
-<img width="39%" src="images/screenshot_connect.png">
+<img width="39%" src="images/screenshot_connect.png" alt="Connect screen">
 
-- **Search** — scan for nearby DM40 BLE devices
-- Click a list row — select a device
-- **Connect** — save MAC and model, connect, and go to the main screen
+- **搜索** —— 扫描附近的 DM40 BLE 设备
+- 点击列表行 —— 选中设备
+- **连接** —— 保存 MAC 地址与型号，建立连接并进入主界面
 
-### Main screen:
+### 主界面：
 
-<p align="left" width="100%">
-    <img width="54%" src="images/manual.png">
+<p align="left">
+    <img width="54%" src="images/manual.png" alt="Manual">
 </p>
 
-| Area | Action |
-|------|--------|
-| **1. AUTO+** | Opens the **RANGE screen** menu for the current mode |
-| **2. RUN / HOLD** | Toggles measurement hold |
-| **3. MODE buttons** | Cycle sub-modes: VDC/VAC, ADC/AAC, OHM, CAP, DIODE/CONT, Hz/TEMP |
-| **4. Display digits** | Main display digits |
-| **5. Save slots** | Click on the **display digits** to save values ​​to slots (max. 6), hold on display digits to clear slots |
-| **6. Graph** | Live measurement plot (hidden in Mini app mode), hold in the graph area to clear it |
-| **7. Settings** ⚙️ | Opens **Settings screen** |
-| **8. REL button** | REL = **Relative mode**, click to set, hold button to cancel |
+| 区域 | 功能 |
+|------|------|
+| **1. AUTO+** | 打开当前模式的**量程界面**菜单 |
+| **2. RUN / HOLD** | 切换测量保持状态 |
+| **3. 模式按钮** | 循环切换子模式：直流电压/交流电压、直流电流/交流电流、电阻、电容、二极管/通断、频率/温度 |
+| **4. 显示数字** | 主显示屏数字 |
+| **5. 保存槽位** | 点击**显示数字**区域可将数值保存到槽位（最多 6 个），长按显示数字区域可清空槽位 |
+| **6. 图表** | 实时测量曲线（迷你应用模式下隐藏），长按图表区域可清空图表 |
+| **7. 设置** ⚙️ | 打开**设置界面** |
+| **8. REL 按钮** | REL = **相对值模式**，点击启用，长按按钮取消 |
 
-Connection status, meter battery, and units are shown in the top bar from live BLE data.
+连接状态、万用表电量及单位信息通过实时 BLE 数据显示在顶部栏中。
 
-### RANGE screen:
+### 量程界面：
 
-<img width="39%" src="images/screenshot_range.png">
+<img width="39%" src="images/screenshot_range.png" alt="Range screen">
 
-- List of ranges for the current measurement mode (depends on DM40A/B/C model)
-- **Back** — return to the main screen
+- 显示当前测量模式下的可用量程列表（取决于 DM40A/B/C 型号）
+- **返回** —— 回到主界面
 
-### Settings screen:
+### 设置界面：
 
-<img width="39%" src="images/screenshot_settings.png">
+<img width="39%" src="images/screenshot_settings.png" alt="Settings screen">
 
-| Toggle | Function |
-|--------|----------|
-| **Mini app** | Smaller window without graph and save slots |
-| **Always on top** | Keep the window above other apps |
-| **RAW data console** | Panel below the UI showing BLE TX/RX packets (protocol debugging) |
+| 开关项 | 功能 |
+|--------|------|
+| **迷你应用** | 缩小窗口，隐藏图表和保存槽位 |
+| **窗口置顶** | 将窗口保持在其它应用之上 |
+| **RAW 数据控制台** | 在界面下方显示 BLE 收发数据包面板（用于协议调试） |
 
-Changes are saved to `settings.json`.
-
-<br>
-
----
-
-## Configuration (`settings.json`):
-
-The file lives next to the exe or in the project root. It is not committed to git — use `settings.example.json` as a template.
-
-| Key | Meaning |
-|-----|---------|
-| `target_mac` | DM40 MAC address (`""` = show Connect screen) |
-| `model_name` | `DM40A`, `DM40B`, or `DM40C` |
-| `device_counts` | Range count scale (40k / 50k / 60k) |
-| `window_scale` | Window scale (`1.0` = 480×300 logical px) |
-| `mini_app` | Mini mode |
-| `always_on_top` | Always on top |
-| `raw_console` | RAW console |
+修改后的设置将保存至 `settings.json`。
 
 <br>
 
 ---
 
-## Building the exe and release zip (maintainers):
+## 配置文件（`settings.json`）：
+
+该文件位于 exe 所在目录或项目根目录下。该文件不纳入 Git 版本管理 —— 请使用 `settings.example.json` 作为模板。
+
+| 键名 | 含义 |
+|------|------|
+| `target_mac` | DM40 MAC 地址（`""` = 显示连接界面） |
+| `model_name` | 型号：`DM40A`、`DM40B` 或 `DM40C` |
+| `device_counts` | 量程计数比例（40k / 50k / 60k） |
+| `window_scale` | 窗口缩放比例（`1.0` = 480×300 逻辑像素） |
+| `mini_app` | 迷你模式 |
+| `always_on_top` | 窗口置顶 |
+| `raw_console` | RAW 数据控制台 |
+
+<br>
+
+---
+
+## 构建 exe 及发布包（面向维护者）：
 
 ```bat
 build_exe.bat
 release_zip.bat
 ```
 
-- **`build_exe.bat`** — PyInstaller `--onedir`, output: `dist\DM40 Wireless\`
-- **`release_zip.bat`** — creates `release\DM40-Wireless-win64.zip` for GitHub Releases
+- **`build_exe.bat`** —— 使用 PyInstaller `--onedir` 模式打包，输出目录：`dist\DM40 Wireless\`
+- **`release_zip.bat`** —— 生成 `release\DM40-Wireless-win64.zip`，用于 GitHub Releases 发布
 
-To publish a release on GitHub:
+在 GitHub 上发布版本的步骤：
 
-1. Build the exe and zip (see above).
-2. Create a new Release from `main` with a tag such as `v1.0.0`.
-3. Attach **`DM40-Wireless-win64.zip`** as a release asset.
-4. Source code stays in the repo; users download the zip, developers clone the repo.
+1. 构建 exe 及 zip 包（见上文）。
+2. 在 `main` 分支上创建新的 Release，标签格式如 `v1.0.0`。
+3. 将 **`DM40-Wireless-win64.zip`** 作为发布资产上传。
+4. 源代码保留在仓库中；用户下载 zip 包使用，开发者克隆仓库进行开发。
 
 <br>
 
 ---
 
-## Project structure:
+## 项目结构：
 
 ```
 DM40-Wireless/
-├── app.py / app.pyw      # Entry points
-├── ble/                  # BLE worker, discovery
-├── core/                 # Protocol, parsing, modes
-├── gui/                  # Tkinter UI
-├── images/               # UI graphics
-├── settings.example.json
-├── install.bat
-├── build_exe.bat
-└── release_zip.bat
+├── app.py / app.pyw      # 入口文件
+├── ble/                  # BLE 工作线程、设备发现
+├── core/                 # 协议解析、模式、量程、配置、i18n 引擎
+├── gui/                  # Tkinter 用户界面（布局、精灵图、图表）
+├── i18n/                 # 国际化语言文件（TOML）
+├── images/               # UI 图片资源
+├── settings.example.json # 配置文件模板
+├── install.bat           # 创建 venv 并安装依赖
+├── build_exe.bat         # PyInstaller 打包
+└── release_zip.bat       # 生成发布 zip
 ```
 
 <br>
 
 ---
 
-## Notes:
+## 注意事项：
 
-- This is not an official Alientek product; it is a community / enthusiast project.
-- Bluetooth must be enabled in Windows; if BT is off, the app shows a warning.
-
+- 本项目并非正点原子（Alientek）官方产品，属于社区 / 爱好者项目。
+- Windows 系统须开启蓝牙功能；若蓝牙未开启，应用将显示警告提示。
 
 <br>
 
 ---
 
-## License:
+## 许可证：
 
-<p align="center" width="100%" text="strong">
-     This project is licensed under the MIT License — Copyright (c) 2026 Urobotos.
+<p align="center">
+     <strong>本项目基于 MIT 许可证开源 —— 版权所有 © 2026 Urobotos。</strong>
 </p>
 
-<p align="center" width="100%">
-    <img width="100" src="images/bin_urobotos.png">
+<p align="center">
+    <img width="100" src="images/bin_urobotos.png" alt="Urobotos logo">
 </p>
 
 <br>
 
-&nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp;  &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; [MIT License](LICENSE)
+&nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp;  &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; [MIT 许可证](LICENSE)
 <br>
 <br>
 
+> **原README.md：** [README_UPSTREAM.md](README_UPSTREAM.md)
 

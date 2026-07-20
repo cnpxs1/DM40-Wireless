@@ -39,7 +39,9 @@ BTN_LABELS = {
 
 
 def btn_label(cmd_key: str) -> str:
-    return BTN_LABELS.get(cmd_key, cmd_key)
+    """返回模式按钮的显示标签（已国际化回退）。"""
+    from core.i18n import t
+    return t(f"mode_btn.{cmd_key}") if cmd_key in BTN_LABELS else cmd_key
 
 
 class ModeState:
