@@ -20,11 +20,25 @@ CURRENT_KINDS = ("ADC", "AAC", "ADC+AC")
 OHM_KINDS = ("RES", "RES_ONLINE")
 SUBTYPE_KINDS = VOLTAGE_KINDS + CURRENT_KINDS + OHM_KINDS
 
-SUBTYPE_ROW_LABELS: dict[str, list[tuple[str, str]]] = {
-    "voltage": [("AC", "VAC"), ("DC", "VDC"), ("AC+DC", "VDC+VAC")],
-    "current": [("AC", "AAC"), ("DC", "ADC"), ("AC+DC", "ADC+AAC")],
-    "resistor": [("Off line", "OHM"), ("On line", "OHM_ONLINE")],
-}
+def subtype_row_labels() -> dict[str, list[tuple[str, str]]]:
+    """返回已翻译的子类型按钮标签表。"""
+    from core.i18n import t
+    return {
+        "voltage": [
+            (t("range_subtype.voltage_ac"), "VAC"),
+            (t("range_subtype.voltage_dc"), "VDC"),
+            (t("range_subtype.voltage_ac_dc"), "VDC+VAC"),
+        ],
+        "current": [
+            (t("range_subtype.current_ac"), "AAC"),
+            (t("range_subtype.current_dc"), "ADC"),
+            (t("range_subtype.current_ac_dc"), "ADC+AAC"),
+        ],
+        "resistor": [
+            (t("range_subtype.resistor_offline"), "OHM"),
+            (t("range_subtype.resistor_online"), "OHM_ONLINE"),
+        ],
+    }
 
 
 def range_back_hit() -> tuple[int, int, int, int]:

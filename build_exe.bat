@@ -32,6 +32,12 @@ if not exist "dist\DM40 Wireless\settings.json" (
   copy /Y settings.example.json "dist\DM40 Wireless\settings.json" >nul 2>&1
 )
 
+REM Copy i18n language files for distribution
+if exist "i18n" (
+  if not exist "dist\DM40 Wireless\i18n" mkdir "dist\DM40 Wireless\i18n"
+  xcopy /Y /E "i18n\*.toml" "dist\DM40 Wireless\i18n\" >nul 2>&1
+)
+
 echo.
 echo Done: dist\DM40 Wireless\DM40 Wireless.exe
 echo Copy the whole folder "dist\DM40 Wireless" for distribution.

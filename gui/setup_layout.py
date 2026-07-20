@@ -18,6 +18,12 @@ SETUP_BTN_COUNT = 2
 SETUP_BTN_LABELS = ("Search", "Connect")
 
 
+def setup_btn_labels() -> tuple[str, str]:
+    """返回已翻译的底部按钮标签 (搜索, 连接)。"""
+    from core.i18n import t
+    return (t("setup.btn_search"), t("setup.btn_connect"))
+
+
 def setup_list_bottom() -> int:
     return MODE_BTN_Y - 8
 

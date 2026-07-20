@@ -20,6 +20,7 @@ def _resource_root() -> Path:
 
 PROJECT_ROOT = _install_root()
 IMAGES_DIR = _resource_root() / "images"
+I18N_DIR = PROJECT_ROOT / "i18n"
 SETTINGS_PATH = PROJECT_ROOT / "settings.json"
 UI_STATE_PATH = PROJECT_ROOT / "dm40_ui_state.json"
 
