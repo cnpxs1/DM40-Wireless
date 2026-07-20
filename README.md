@@ -1,17 +1,23 @@
 # DM40 Wireless
 
-<p align="center" width="100%">
-    <img width="50%" src="images/alientek.png">
+<p align="center">
+    <img width="50%" src="images/alientek.png" alt="Alientek logo">
 </p>
 
 一款 Windows 桌面应用程序，通过**低功耗蓝牙（BLE）**连接无线**正点原子（Alientek）DM40**万用表（支持 DM40A / DM40B / DM40C）。界面完整复现设备显示屏内容，包括测量模式、量程、HOLD 保持状态及已保存的数值。
 
-**仓库地址：** [github.com/Urobotos/DM40-Wireless](https://github.com/Urobotos/DM40-Wireless)
+**仓库地址：** [Urobotos/DM40-Wireless](https://github.com/Urobotos/DM40-Wireless)
+
+**原作者：** [zacharcc](https://github.com/zacharcc)
 
 | 分支 | 用途 |
 |------|------|
 | `main` | 稳定发布版，与 GitHub Releases 同步 |
-| `develop` | 活跃开发分支，新功能与问题修复 |
+| `dev` | 活跃开发分支，新功能与问题修复 |
+
+> 本分支在原作者 [zacharcc](https://github.com/zacharcc) 的基础上新增了**多语言适配**功能，内置简体中文、繁體中文、英文三套界面语言，支持运行时动态切换。用户也可通过设置界面**导入自定义 TOML 语言文件**，无需修改代码即可扩展至任意语言。
+>
+> 本分支的修改由 **AI 辅助完成**。
 
 <br>
 
@@ -71,11 +77,11 @@ copy settings.example.json settings.json
 
 ## 应用截图：
 
-<p align="left" width="100%">
-    <img width="44%" src="images/screenshot_main.png">
-    <img width="44%" src="images/screenshot_main2.png">
-    <img width="44%" src="images/screenshot_raw_console.png">
-    <img width="44%" src="images/screenshot_mini_app.png">
+<p align="left">
+    <img width="44%" src="images/screenshot_main.png" alt="Main screen">
+    <img width="44%" src="images/screenshot_main2.png" alt="Main screen 2">
+    <img width="44%" src="images/screenshot_raw_console.png" alt="RAW console">
+    <img width="44%" src="images/screenshot_mini_app.png" alt="Mini app">
 </p>
 
 <br>
@@ -86,7 +92,7 @@ copy settings.example.json settings.json
 
 ### 连接界面（首次启动 / MAC 地址为空时）：
 
-<img width="39%" src="images/screenshot_connect.png">
+<img width="39%" src="images/screenshot_connect.png" alt="Connect screen">
 
 - **搜索** —— 扫描附近的 DM40 BLE 设备
 - 点击列表行 —— 选中设备
@@ -94,8 +100,8 @@ copy settings.example.json settings.json
 
 ### 主界面：
 
-<p align="left" width="100%">
-    <img width="54%" src="images/manual.png">
+<p align="left">
+    <img width="54%" src="images/manual.png" alt="Manual">
 </p>
 
 | 区域 | 功能 |
@@ -113,14 +119,14 @@ copy settings.example.json settings.json
 
 ### 量程界面：
 
-<img width="39%" src="images/screenshot_range.png">
+<img width="39%" src="images/screenshot_range.png" alt="Range screen">
 
 - 显示当前测量模式下的可用量程列表（取决于 DM40A/B/C 型号）
 - **返回** —— 回到主界面
 
 ### 设置界面：
 
-<img width="39%" src="images/screenshot_settings.png">
+<img width="39%" src="images/screenshot_settings.png" alt="Settings screen">
 
 | 开关项 | 功能 |
 |--------|------|
@@ -179,13 +185,14 @@ release_zip.bat
 DM40-Wireless/
 ├── app.py / app.pyw      # 入口文件
 ├── ble/                  # BLE 工作线程、设备发现
-├── core/                 # 协议解析、数据解析、模式定义
-├── gui/                  # Tkinter 用户界面
+├── core/                 # 协议解析、模式、量程、配置、i18n 引擎
+├── gui/                  # Tkinter 用户界面（布局、精灵图、图表）
+├── i18n/                 # 国际化语言文件（TOML）
 ├── images/               # UI 图片资源
-├── settings.example.json
-├── install.bat
-├── build_exe.bat
-└── release_zip.bat
+├── settings.example.json # 配置文件模板
+├── install.bat           # 创建 venv 并安装依赖
+├── build_exe.bat         # PyInstaller 打包
+└── release_zip.bat       # 生成发布 zip
 ```
 
 <br>
@@ -216,3 +223,6 @@ DM40-Wireless/
 &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp;  &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; [MIT 许可证](LICENSE)
 <br>
 <br>
+
+> **原README.md：** [README_UPSTREAM.md](README_UPSTREAM.md)
+
