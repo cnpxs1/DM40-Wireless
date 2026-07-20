@@ -182,11 +182,13 @@ class SettingsScreen(tk.Frame):
             )
             return
 
-        # 写入 i18n/ 目录
+        # 写入 i18n/ 目录（先删后写，避免 Windows 文件锁定）
         dest_dir = i18n_dir()
         dest_dir.mkdir(parents=True, exist_ok=True)
         dest = dest_dir / src.name
         try:
+            if dest.exists():
+                dest.unlink()
             dest.write_text(content, "utf-8")
         except OSError as exc:
             messagebox.showerror(

@@ -123,10 +123,12 @@ class DM40App:
         i18n = get_i18n()
         if not i18n.load_language(lang_code):
             return
-        # 写入 settings.json
+        # 原子写入 settings.json（先 .tmp 再替换，防止写坏）
         self.settings["language"] = lang_code
         from gui.settings import save_settings
-        save_settings(self.settings)
+        if not save_settings(self.settings):
+            # 保存失败不阻塞 UI 刷新，内存中的语言设置当前会话仍生效
+            pass
         # 刷新 UI
         self.root.title(t("app.title"))
         self._refresh_visible_screen()

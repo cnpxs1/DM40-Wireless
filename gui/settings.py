@@ -57,8 +57,13 @@ def load_settings() -> dict:
     return deepcopy(DEFAULTS)
 
 
-def save_settings(settings: dict) -> None:
+def save_settings(settings: dict) -> bool:
+    """原子写入 settings.json（先写临时文件再替换，避免损坏）。"""
+    import tempfile
+    tmp = SETTINGS_PATH.with_suffix(".tmp")
     try:
-        SETTINGS_PATH.write_text(json.dumps(settings, indent=2), encoding="utf-8")
+        tmp.write_text(json.dumps(settings, indent=2), encoding="utf-8")
+        tmp.replace(SETTINGS_PATH)
+        return True
     except OSError:
-        pass
+        return False
