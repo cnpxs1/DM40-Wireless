@@ -1,4 +1,4 @@
-"""Layout Connect (cold run) obrazovky."""
+"""Connect (cold run) screen layout."""
 
 from gui.layout import MODE_BTN_GAP, MODE_BTN_H, MODE_BTN_MARGIN, MODE_BTN_Y, SCREEN_W, TOP_BAR_H
 
@@ -19,7 +19,7 @@ SETUP_BTN_LABELS = ("Search", "Connect")
 
 
 def setup_btn_labels() -> tuple[str, str]:
-    """返回已翻译的底部按钮标签 (搜索, 连接)。"""
+    """Return translated bottom button labels (Search, Connect)."""
     from core.i18n import t
     return (t("setup.btn_search"), t("setup.btn_connect"))
 
@@ -29,7 +29,7 @@ def setup_list_bottom() -> int:
 
 
 def setup_button_slots() -> list[tuple[int, int, int, int]]:
-    """(x, y, w, h) pro Search a Connect – stejná řada jako MODE tlačítka."""
+    """(x, y, w, h) for Search and Connect – same row as MODE buttons."""
     y = MODE_BTN_Y
     usable = SCREEN_W - 2 * MODE_BTN_MARGIN - (SETUP_BTN_COUNT - 1) * MODE_BTN_GAP
     w = usable // SETUP_BTN_COUNT

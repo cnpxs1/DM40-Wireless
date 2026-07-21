@@ -1,4 +1,4 @@
-"""Hlavní okno aplikace – přepínání Main / Range / Settings obrazovky."""
+"""Main application window – Main / Range / Settings screen switching."""
 
 import time
 
@@ -29,7 +29,7 @@ class DM40App:
         self.settings = load_settings()
         apply_saved_model(self.settings)
 
-        # 从 settings.json 读取语言配置初始化 i18n
+        # Initialize i18n from language in settings.json
         lang = (self.settings.get("language") or "").strip() or "en-US"
         get_i18n().init(lang)
         self.scale = float(self.settings.get("window_scale", 1.0))
@@ -119,22 +119,22 @@ class DM40App:
         self.show_main_screen()
 
     def reload_language(self, lang_code: str) -> None:
-        """切换语言并刷新全部可见界面，同时更新 settings.json。"""
+        """Switch language and refresh all visible UI; update settings.json."""
         i18n = get_i18n()
         if not i18n.load_language(lang_code):
             return
-        # 原子写入 settings.json（先 .tmp 再替换，防止写坏）
+        # Atomic settings.json write (.tmp then replace, prevents corruption)
         self.settings["language"] = lang_code
         from gui.settings import save_settings
         if not save_settings(self.settings):
-            # 保存失败不阻塞 UI 刷新，内存中的语言设置当前会话仍生效
+            # Save failure does not block UI refresh; in-memory language still applies this session
             pass
-        # 刷新 UI
+        # Refresh UI
         self.root.title(t("app.title"))
         self._refresh_visible_screen()
 
     def _refresh_visible_screen(self) -> None:
-        """根据当前屏幕重建 UI 以反映新语言。"""
+        """Rebuild visible UI for the current screen to reflect the new language."""
         if self._current_screen == "main":
             self.main_screen.refresh_all()
         elif self._current_screen == "range":
@@ -157,7 +157,7 @@ class DM40App:
         self.setup_screen.raise_click_layer()
 
     def _sync_raw_callback(self) -> None:
-        """Bez RAW konzole nevolat callback z BLE vlákna (každý poll TX+RX)."""
+        """Without RAW console, do not call callback from BLE thread (every poll TX+RX)."""
         self.ble._callbacks.on_raw_traffic = (
             self._on_raw_traffic if self.settings.get("raw_console") else None
         )
@@ -174,7 +174,7 @@ class DM40App:
         return self._client_w, h
 
     def _apply_window_size(self) -> None:
-        """Klientská oblast okna = DM40 UI (+ RAW konzole); bez prázdného pruhu pod obsahem."""
+        """Client area = DM40 UI (+ RAW console); no empty strip below content."""
         self.root.update_idletasks()
         self.root.update()
         w, h = self._client_dimensions()
@@ -222,7 +222,7 @@ class DM40App:
         return f"TX {hex_str}\n"
 
     def _is_priority_raw(self, direction: str, data: bytes) -> bool:
-        """Uživatelské TX (MODE, RANGE, HOLD, …) + krátká RX odpověď."""
+        """User TX (MODE, RANGE, HOLD, …) + short RX response."""
         if direction == "TX":
             return data not in _BACKGROUND_TX
         return direction == "RX" and time.monotonic() < self._raw_rx_burst_until
@@ -252,7 +252,7 @@ class DM40App:
             )
 
     def _queue_raw_poll_line(self, line: str) -> None:
-        """Poll: zpomalený výpis, bez fronty – drží jen nejnovější nezobrazený řádek."""
+        """Poll: throttled output, no queue – keeps only the latest unshown line."""
         if line == self._last_raw_line:
             return
         self._raw_poll_pending = line

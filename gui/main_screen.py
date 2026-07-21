@@ -1,4 +1,4 @@
-"""Hlavní obrazovka multimetru – sprite GUI bez celoplošného PNG pozadí."""
+"""Main multimeter screen – sprite GUI without full-screen PNG background."""
 
 import tkinter as tk
 
@@ -75,7 +75,7 @@ class MainScreen(tk.Frame):
         self.canvas.tag_raise("graph_hit_rel")
 
     def _raise_visual_layers(self) -> None:
-        """Graf pod MODE řadou; klikací zóny se řeší v raise_click_layer."""
+        """Graph below MODE row; click zones handled in raise_click_layer."""
         self.canvas.tag_lower("graph")
         self.canvas.tag_raise("mode_btn")
 
@@ -673,7 +673,7 @@ class MainScreen(tk.Frame):
         self.canvas.tag_bind("hit_main_save", "<ButtonRelease-1>", on_release)
 
     def refresh_all(self) -> None:
-        """重建所有可翻译文本（语言切换时调用）。"""
+        """Rebuild all translatable text (called on language change)."""
         self.refresh_mode_buttons(self.app.mode_state)
         self._graph.refresh_rel_text()
         if self._bt_off_display:
@@ -681,11 +681,11 @@ class MainScreen(tk.Frame):
         self.raise_click_layer()
 
     def release_hold_freeze(self) -> None:
-        """Uvolní zmrazení displeje (např. po přepnutí MODE → RUN na přístroji)."""
+        """Release display freeze (e.g. after MODE → RUN on the device)."""
         self._display_frozen = False
 
     def _render_measurement(self, m, rng_label: str) -> None:
-        """Vykreslí měření na displej (hlavní číslice, aux, jednotky, HV)."""
+        """Render measurement on display (main digits, aux, units, HV)."""
         main_text = combined_main_value_str(
             m.kind, m.value_str, m.decimals,
             m.sec_val, m.third_val,

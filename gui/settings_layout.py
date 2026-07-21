@@ -1,4 +1,4 @@
-"""Layout SETTINGS obrazovky (referenční 480×{SCREEN_H} px)."""
+"""Settings screen layout (reference 480×{SCREEN_H} px)."""
 
 from gui import layout as L
 from gui.range_layout import RANGE_BACK_IMG, range_back_hit
@@ -23,7 +23,7 @@ LANGUAGE_LANG_ICON_GAP = 6
 LANGUAGE_SELECTOR_PAD = 8
 
 def setting_rows() -> list[tuple[str, str]]:
-    """返回已翻译的设置行 (key, label)。"""
+    """Return translated setting rows (key, label)."""
     from core.i18n import t
     return [
         ("mini_app", t("settings.label_mini_app")),
@@ -38,7 +38,7 @@ def settings_back_hit() -> tuple[int, int, int, int]:
 
 
 def settings_row_slots() -> list[tuple[int, int, int, int]]:
-    """(x, y, w, h) pro každý řádek nastavení."""
+    """(x, y, w, h) for each settings row."""
     rows = setting_rows()
     x = SETTINGS_ROW_MARGIN
     w = L.SCREEN_W - 2 * SETTINGS_ROW_MARGIN

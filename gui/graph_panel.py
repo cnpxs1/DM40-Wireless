@@ -1,4 +1,4 @@
-"""Graf s auto-škálováním, MAX/REL/MIN – vykreslení na sdíleném canvasu."""
+"""Graph with auto-scaling, MAX/REL/MIN – rendered on shared canvas."""
 
 from __future__ import annotations
 
@@ -259,7 +259,7 @@ class GraphPanel:
         self.canvas.tag_bind(tag, "<ButtonRelease-1>", on_release)
 
     def refresh_rel_text(self) -> None:
-        """刷新 REL 按钮文本（语言切换时调用）。"""
+        """Refresh REL button text (called on language change)."""
         rid = self._sidebar_ids.get("rel")
         if rid:
             self.canvas.itemconfig(rid, text=t("graph.rel"))

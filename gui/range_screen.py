@@ -1,4 +1,4 @@
-"""RANGE obrazovka – canvas GUI podle DM40 multimetru."""
+"""RANGE screen – canvas GUI matching the DM40 multimeter."""
 
 from __future__ import annotations
 

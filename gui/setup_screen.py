@@ -1,4 +1,4 @@
-"""Connect (cold run) – výběr DM40 v hlavním okně aplikace."""
+"""Connect (cold run) – DM40 device selection in the main app window."""
 
 from __future__ import annotations
 
@@ -144,7 +144,7 @@ class SetupScreen(tk.Frame):
             )
 
     def refresh_all(self) -> None:
-        """重建所有可翻译文本，保留设备列表和扫描状态。"""
+        """Rebuild all translatable text; keep device list and scan state."""
         self.canvas.delete("setup_chrome")
         self.canvas.delete("setup_btn")
         self._sprite_ids.clear()

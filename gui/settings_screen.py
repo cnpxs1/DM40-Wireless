@@ -1,4 +1,4 @@
-"""SETTINGS obrazovka – canvas GUI ve stylu RANGE menu."""
+"""SETTINGS screen – canvas GUI styled like the RANGE menu."""
 
 from __future__ import annotations
 

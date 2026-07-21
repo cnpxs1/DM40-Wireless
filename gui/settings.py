@@ -58,7 +58,7 @@ def load_settings() -> dict:
 
 
 def save_settings(settings: dict) -> bool:
-    """原子写入 settings.json（先写临时文件再替换，避免损坏）。"""
+    """Atomically write settings.json (temp file then replace, avoids corruption)."""
     import tempfile
     tmp = SETTINGS_PATH.with_suffix(".tmp")
     try:
