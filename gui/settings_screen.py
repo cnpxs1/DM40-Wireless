@@ -75,6 +75,9 @@ class SettingsScreen(tk.Frame):
 
     def rebuild(self) -> None:
         self._close_lang_popup()
+        # Refresh title text (tagged settings_chrome, needs separate update)
+        if self._title_id is not None:
+            self.canvas.itemconfig(self._title_id, text=t("settings.title"))
         self.canvas.delete("settings_row")
         label_font = ("sans-serif", self._s(SL.SETTINGS_LABEL_FONT), "normal")
         state_font = ("sans-serif", self._s(SL.SETTINGS_STATE_FONT), "bold")

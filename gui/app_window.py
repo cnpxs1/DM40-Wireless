@@ -68,6 +68,7 @@ class DM40App:
         self._meas_pending: tuple[object, bytes] | None = None
         self._meas_scheduled = False
         self._ble_started = False
+        self._pending_lang_refresh = False
 
         cbs = BleCallbacks(
             on_connecting=self._on_connecting,
@@ -131,6 +132,7 @@ class DM40App:
             pass
         # Refresh UI
         self.root.title(t("app.title"))
+        self._pending_lang_refresh = True
         self._refresh_visible_screen()
 
     def _refresh_visible_screen(self) -> None:
@@ -286,6 +288,9 @@ class DM40App:
         self.settings_screen.lower()
         self.setup_screen.lower()
         self.main_screen.lift()
+        if self._pending_lang_refresh:
+            self.main_screen.refresh_all()
+            self._pending_lang_refresh = False
         self.apply_settings()
         self.main_screen.raise_click_layer()
 
