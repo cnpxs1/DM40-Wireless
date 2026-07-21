@@ -1,4 +1,4 @@
-"""Načtení / uložení settings.json."""
+"""Load / save settings.json."""
 
 import json
 from copy import deepcopy
@@ -22,7 +22,7 @@ DEFAULTS = {
 
 
 def apply_saved_model(settings: dict) -> None:
-    """Načte uložený model multimetru (RANGE counts) před připojením."""
+    """Loads the saved multimeter model (RANGE counts) before connecting."""
     name = (settings.get("model_name") or "").strip()
     counts = int(settings.get("device_counts") or 0)
     if name and counts > 0:
@@ -30,7 +30,7 @@ def apply_saved_model(settings: dict) -> None:
 
 
 def persist_device(settings: dict, *, mac: str, model_name: str, device_counts: int) -> bool:
-    """Uloží MAC a model do settings; vrátí True při změně."""
+    """Saves MAC and model to settings; returns True on change."""
     changed = False
     mac = mac.strip()
     if mac and settings.get("target_mac") != mac:
