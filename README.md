@@ -123,11 +123,12 @@ Connection status, meter battery, and units are shown in the top bar from live B
 
 <img width="39%" src="images/screenshot_settings.png">
 
-| Toggle | Function |
+| Setting | Function |
 |--------|----------|
 | **Mini app** | Smaller window without graph and save slots |
 | **Always on top** | Keep the window above other apps |
 | **RAW data console** | Panel below the UI showing BLE TX/RX packets (protocol debugging) |
+| **Language** | Tap the current language to pick from installed `.toml` files; folder icon opens `i18n/` to add custom translations |
 
 Changes are saved to `settings.json`.
 
