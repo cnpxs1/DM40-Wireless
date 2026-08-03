@@ -138,7 +138,8 @@ class _I18n:
     # Internal
     # ------------------------------------------------------------------
 
-    def _resolve_path(self, filename: str) -> Path | None:
+    @staticmethod
+    def _resolve_path(filename: str) -> Path | None:
         """Find a language file: external ``i18n/`` first, then embedded fallback.
 
         Returns ``None`` if the file is not found in either location.
