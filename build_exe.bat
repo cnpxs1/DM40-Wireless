@@ -86,6 +86,7 @@ echo [3/4] Building with Nuitka --onefile...
   --windows-console-mode=disable ^
   --enable-plugin=tk-inter ^
   --include-data-dir=images=images ^
+  --include-data-files=i18n/en-US.toml=i18n/en-US.toml ^
   --include-package=bleak ^
   --include-package=winrt ^
   --output-dir=dist ^
