@@ -1,6 +1,6 @@
 # DM40 Wireless
 
-<p style="text-align: center">
+<p align="center" width="100%">
     <img width="50%" src="images/alientek.png" alt="Alientek Logo">
 </p>
 
@@ -21,7 +21,7 @@ A Windows desktop app that connects over **Bluetooth Low Energy (BLE)** to the w
 
 - **Windows 10/11** with working Bluetooth (BLE)
 - **Alientek DM40** multimeter (A / B / C) within range
-- To run from source: **Python 3.11+** ([python.org](https://www.python.org/)) — check *Add python to PATH* during installation
+- To run from source: **Python 3.11+** ([python.org](https://www.python.org/)) — check **`Add python to PATH`** during installation
 
 <br>
 
@@ -35,9 +35,11 @@ A Windows desktop app that connects over **Bluetooth Low Energy (BLE)** to the w
 
 **3.** Run **`DM40 Wireless.exe`**
 
-**4.** On first launch, the **Connect** screen appears — search for your meter, select it in the list, and click **Connect**. The MAC address is saved to `settings.json` next to the exe; on the next launch the app connects automatically.
+**4.** On first launch, the **Connect** screen appears — search for your meter, select it in the list, and click **Connect**. The MAC address is saved to `settings.json` next to the exe, on the next launch the app connects automatically.
 
-> The distribution is a single executable built with Nuitka. The `i18n\` folder and `settings.json` must stay next to the exe — the app reads language files and settings from its own directory at runtime.
+<br>
+
+> The distribution is a **folder** built with Nuitka (`--standalone`). Keep `DM40 Wireless.exe` together with the other files in that folder (runtime libraries, `i18n\`, `settings.json`). Do not move the exe alone.
 
 <br>
 
@@ -51,9 +53,7 @@ cd DM40-Wireless
 .\install.bat
 ```
 
-*( `install.bat` creates `.venv`, installs dependencies from `requirements.txt`, and installs Nuitka for building )* <br><br>
-
-**To build the exe**, **Visual Studio 2022/2025/2026** with the **"Desktop development with C++"** workload is required. The build script (`build_exe.bat`) auto-detects MSVC — no manual path setup needed.<br><br>
+*(* `install.bat` *creates* `.venv`*, installs dependencies from* `requirements.txt`*, and installs* `Nuitka` *for building )* <br><br>
 
 On first run, copy the settings template:
 
@@ -95,6 +95,7 @@ Then start the app using one of these:
 - **Search** — scan for nearby DM40 BLE devices
 - Click a list row — select a device
 - **Connect** — save MAC and model, connect, and go to the main screen
+- ⚙️ In the **Settings screen** you can change the language | ⚙️ 在“设置”屏幕中，您可以更改语言。
 
 ### Main screen:
 
@@ -165,12 +166,19 @@ build_exe.bat
 release_zip.bat
 ```
 
-- **`build_exe.bat`** — Nuitka `--onefile` + MSVC, output: `dist\DM40 Wireless.exe`
-  - Auto-detects Visual Studio 2022/2025/2026 (requires "Desktop development with C++" workload)
-  - Copies `i18n\*.toml` and `settings.example.json` alongside the exe as external assets
-- **`release_zip.bat`** — packages exe + `i18n\` + `settings.json` → `release\DM40-Wireless-win64.zip`
+> **To build the exe**, **Visual Studio 2022/2025/2026** with the **"Desktop development with C++"** workload is required. The build script (`build_exe.bat`) auto-detects MSVC — no manual path > setup needed.
 
-To publish a release on GitHub:
+<br>
+
+- **`build_exe.bat`** — Nuitka `--standalone` + MSVC, output folder: `dist\DM40 Wireless\`
+  - Auto-detects Visual Studio 2022/2025/2026 (requires "Desktop development with C++" workload)
+  - Copies `i18n\*.toml` and `settings.example.json` into the distribution folder
+  - Uses folder mode (not `--onefile`) to reduce Windows Defender false positives
+- **`release_zip.bat`** — packages `dist\DM40 Wireless\` → `release\DM40-Wireless-win64.zip`
+
+<br>
+
+**To publish a release on GitHub:**
 
 1. Build the exe and zip (see above).
 2. Create a new Release from `main` with a tag such as `v1.0.0`.
@@ -185,24 +193,26 @@ To publish a release on GitHub:
 
 ```
 DM40-Wireless/
-├── app.py / app.pyw          # Entry points
 ├── ble/                      # BLE worker, discovery
 ├── core/                     # Protocol, parsing, modes, config
 ├── gui/                      # Tkinter UI, layout
 ├── i18n/                     # Language .toml files
 ├── images/                   # UI graphics
+├── release/                  # Release archives (not in git)
+├── dist/                     # Build output (not in git)
+│   └── DM40 Wireless/           # Standalone distribution folder
+│       ├── DM40 Wireless.exe    # launcher (Windows clickable)
+│       ├── i18n/                # External language files
+│       ├── settings.json        # Default runtime config
+│       └── dm40_ui_state.json   # UI state (auto-generated at runtime)
+│
 ├── DM40 Wireless.bat         # Dev launcher (Windows clickable)
+├── app.py, app.pyw           # Entry points
 ├── settings.example.json     # Settings template
 ├── requirements.txt          # Python dependencies
 ├── install.bat               # venv + deps + Nuitka installer
-├── build_exe.bat             # Nuitka --onefile + MSVC build
-├── release_zip.bat           # Release package script
-├── dist/                     # Build output (not in git)
-│   ├── DM40 Wireless.exe     #   Nuitka onefile executable
-│   ├── i18n/                 #   External language files
-│   ├── settings.json         #   Default runtime config
-│   └── dm40_ui_state.json    #   UI state (auto-generated at runtime)
-└── release/                  # Release archives (not in git)
+├── build_exe.bat             # Nuitka --standalone + MSVC build
+└── release_zip.bat           # Release package script
 ```
 
 <br>
@@ -221,11 +231,11 @@ DM40-Wireless/
 
 ## License:
 
-<p style="text-align: center"><strong>
+<p align="center" width="100%">
      This project is licensed under the MIT License — Copyright (c) 2026 Urobotos.
-</strong></p>
+</p>
 
-<p style="text-align: center">
+<p align="center" width="100%">
     <img width="100" src="images/bin_urobotos.png" alt="Urobotos">
 </p>
 
