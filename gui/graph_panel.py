@@ -67,7 +67,7 @@ class GraphPanel:
         self._rel_bg_id: int | None = None
 
     def install(self) -> None:
-        font = ("sans-serif", self._s(L.GRAPH_FONT), "")
+        font = ("Arial", self._s(L.GRAPH_FONT), "")
         layout = L.graph_layout()
         gx, gy, gw, gh = L.GRAPH_AREA
         self._area_px = (self._s(gx), self._s(gy), self._s(gw), self._s(gh))
@@ -116,7 +116,7 @@ class GraphPanel:
             tags=(self.TAG, "graph_min"),
         )
 
-        rel_font = ("sans-serif", self._s(L.GRAPH_FONT), "bold")
+        rel_font = ("Arial", self._s(L.GRAPH_FONT), "bold")
         rcx = self._s(rx + rw // 2)
         rcy = self._s(ry + rh // 2)
         self._sidebar_ids["rel"] = self.canvas.create_text(

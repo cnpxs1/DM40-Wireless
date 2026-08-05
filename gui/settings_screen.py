@@ -47,7 +47,7 @@ class SettingsScreen(tk.Frame):
             0, 0, self._s(L.SCREEN_W), self._s(L.TOP_BAR_H),
             fill=rgb_hex("top_bar_background"), outline="", tags="settings_chrome",
         )
-        font = ("sans-serif", self._s(SL.SETTINGS_TITLE_FONT), "bold")
+        font = ("Arial", self._s(SL.SETTINGS_TITLE_FONT), "bold")
         self._title_id = self.canvas.create_text(
             self._s(L.SCREEN_W // 2), self._s(SL.SETTINGS_TITLE_Y), text=t("settings.title"),
             fill=rgb_hex("text_primary"), anchor="center", font=font, tags="settings_chrome",
@@ -78,8 +78,8 @@ class SettingsScreen(tk.Frame):
         if self._title_id is not None:
             self.canvas.itemconfig(self._title_id, text=t("settings.title"))
         self.canvas.delete("settings_row")
-        label_font = ("sans-serif", self._s(SL.SETTINGS_LABEL_FONT), "normal")
-        state_font = ("sans-serif", self._s(SL.SETTINGS_STATE_FONT), "bold")
+        label_font = ("Arial", self._s(SL.SETTINGS_LABEL_FONT), "normal")
+        state_font = ("Arial", self._s(SL.SETTINGS_STATE_FONT), "bold")
 
         for (key, label), (x, y, w, h) in zip(SL.setting_rows(), SL.settings_row_slots()):
             if key == "language":
@@ -211,7 +211,7 @@ class SettingsScreen(tk.Frame):
         inner = tk.Frame(popup, bg=rgb_hex("background"), padx=pad, pady=pad)
         inner.pack(fill="both", expand=True)
 
-        label_font = ("sans-serif", self._s(SL.SETTINGS_LABEL_FONT), "normal")
+        label_font = ("Arial", self._s(SL.SETTINGS_LABEL_FONT), "normal")
 
         for lang_code, display in languages.items():
             active = lang_code == current

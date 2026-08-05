@@ -49,7 +49,7 @@ class RangeScreen(tk.Frame):
             0, 0, self._s(L.SCREEN_W), self._s(L.TOP_BAR_H),
             fill=rgb_hex("top_bar_background"), outline="", tags="range_chrome",
         )
-        font = ("sans-serif", self._s(RL.RANGE_TITLE_FONT), "bold")
+        font = ("Arial", self._s(RL.RANGE_TITLE_FONT), "bold")
         self._title_id = self.canvas.create_text(
             self._s(L.SCREEN_W // 2), self._s(RL.RANGE_TITLE_Y), text=t("range.title"),
             fill=rgb_hex("text_primary"), anchor="center", font=font, tags="range_chrome",
@@ -95,7 +95,7 @@ class RangeScreen(tk.Frame):
 
         items = ranges_for_kind(kind, MODEL.model_name)
         start_y = L.TOP_BAR_H + RL.RANGE_BTN_MARGIN
-        font = ("sans-serif", self._s(RL.RANGE_BTN_FONT), "normal")
+        font = ("Arial", self._s(RL.RANGE_BTN_FONT), "normal")
 
         for (label, flag), (x, y, w, h) in zip(items, RL.range_button_slots(len(items), start_y=start_y)):
             self._place_range_button(x, y, w, h, label, flag, flag == active_flag, font)

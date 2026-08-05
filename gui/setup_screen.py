@@ -54,18 +54,18 @@ class SetupScreen(tk.Frame):
             0, 0, self._s(L.SCREEN_W), self._s(L.TOP_BAR_H),
             fill=rgb_hex("top_bar_background"), outline="", tags="setup_chrome",
         )
-        font = ("sans-serif", self._s(SL.SETUP_TITLE_FONT), "bold")
+        font = ("Arial", self._s(SL.SETUP_TITLE_FONT), "bold")
         self.canvas.create_text(
             self._s(L.SCREEN_W // 2), self._s(SL.SETUP_TITLE_Y), text=t("setup.title"),
             fill=rgb_hex("text_primary"), anchor="center", font=font, tags="setup_chrome",
         )
-        hint_font = ("sans-serif", self._s(SL.SETUP_HINT_FONT), "normal")
+        hint_font = ("Arial", self._s(SL.SETUP_HINT_FONT), "normal")
         self.canvas.create_text(
             self._s(L.SCREEN_W // 2), self._s(SL.SETUP_HINT_Y),
             text=t("setup.hint"),
             fill=rgb_hex("text_secondary"), anchor="center", font=hint_font, tags="setup_chrome",
         )
-        status_font = ("sans-serif", self._s(SL.SETUP_STATUS_FONT), "normal")
+        status_font = ("Arial", self._s(SL.SETUP_STATUS_FONT), "normal")
         self._status_id = self.canvas.create_text(
             self._s(L.SCREEN_W // 2), self._s(SL.SETUP_STATUS_Y), text="",
             fill=rgb_hex("text_primary"), anchor="center", font=status_font, tags="setup_chrome",
@@ -156,7 +156,7 @@ class SetupScreen(tk.Frame):
 
     def _draw_bottom_buttons(self) -> None:
         self._setup_btn_bg_ids.clear()
-        font = ("sans-serif", self._s(13), "normal")
+        font = ("Arial", self._s(13), "normal")
         for i, (label, (x, y, w, h)) in enumerate(zip(SL.setup_btn_labels(), SL.setup_button_slots())):
             rx, ry, rw, rh = self._s(x), self._s(y), self._s(w), self._s(h)
             radius = self._s(L.MODE_BTN_RADIUS)
@@ -259,7 +259,7 @@ class SetupScreen(tk.Frame):
             self.raise_click_layer()
             return
 
-        font = ("sans-serif", self._s(SL.SETUP_ROW_FONT), "normal")
+        font = ("Arial", self._s(SL.SETUP_ROW_FONT), "normal")
         x = SL.SETUP_LIST_MARGIN
         w = L.SCREEN_W - 2 * SL.SETUP_LIST_MARGIN
         y = SL.SETUP_LIST_TOP
