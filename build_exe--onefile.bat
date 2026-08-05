@@ -107,7 +107,7 @@ if errorlevel 1 (
 )
 
 REM --- Verify output and clean intermediate folders ---
-echo [4/4] Verifying output and copying external assets...
+echo [4/4] Verifying output and preparing distribution folder...
 if not exist "dist\DM40 Wireless.exe" (
     echo [ERROR] Output exe not found in dist\.
     pause
@@ -118,27 +118,38 @@ REM Remove intermediate Nuitka folders left by onefile builds
 if exist "dist\DM40 Wireless.build" rmdir /S /Q "dist\DM40 Wireless.build"
 if exist "dist\DM40 Wireless.onefile-build" rmdir /S /Q "dist\DM40 Wireless.onefile-build"
 
+REM Move exe into the unified distribution folder (same layout as --standalone)
+if exist "dist\DM40 Wireless" rmdir /S /Q "dist\DM40 Wireless"
+mkdir "dist\DM40 Wireless"
+move /Y "dist\DM40 Wireless.exe" "dist\DM40 Wireless\DM40 Wireless.exe" >nul
+if errorlevel 1 (
+    echo [ERROR] Failed to move exe into dist\DM40 Wireless\
+    pause
+    exit /b 1
+)
+
 REM Copy i18n language files next to the exe (external, editable;
 REM en-US.toml is also embedded inside the exe as a read-only fallback)
 if exist "i18n" (
-    if not exist "dist\i18n" mkdir "dist\i18n"
-    xcopy /Y /E "i18n\*.toml" "dist\i18n\" >nul 2>&1
-    echo   i18n\ copied to dist\i18n\
+    if not exist "dist\DM40 Wireless\i18n" mkdir "dist\DM40 Wireless\i18n"
+    xcopy /Y /E "i18n\*.toml" "dist\DM40 Wireless\i18n\" >nul 2>&1
+    echo   i18n\ copied to dist\DM40 Wireless\i18n\
 )
 
 REM Copy settings template as default config
-if not exist "dist\settings.json" (
-    copy /Y "settings.example.json" "dist\settings.json" >nul 2>&1
-    echo   settings.example.json copied to dist\settings.json
+if not exist "dist\DM40 Wireless\settings.json" (
+    copy /Y "settings.example.json" "dist\DM40 Wireless\settings.json" >nul 2>&1
+    echo   settings.example.json copied to dist\DM40 Wireless\settings.json
 )
 
 echo.
 echo ============================================
 echo  Build succeeded
-echo  Output: dist\DM40 Wireless.exe
+echo  Output: dist\DM40 Wireless\DM40 Wireless.exe
 echo.
-echo  Distribution files (next to the exe):
-echo    i18n\      (language files - editable)
+echo  Distribution files:
+echo    DM40 Wireless.exe   (self-contained single exe)
+echo    i18n\               (language files - editable)
 echo    settings.json
 echo.
 echo  Note: the exe is self-contained, but settings and
