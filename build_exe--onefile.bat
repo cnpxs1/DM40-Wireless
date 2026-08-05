@@ -1,7 +1,7 @@
 @echo off
 cd /d "%~dp0"
 echo ============================================
-echo  DM40 Wireless - Nuitka + MSVC Build
+echo  DM40 Wireless - Nuitka + MSVC Onefile Build
 echo ============================================
 echo.
 
@@ -79,21 +79,14 @@ if errorlevel 1 (
     exit /b 1
 )
 
-REM --- Nuitka build (standalone folder; avoids onefile AV false positives) ---
-echo [3/4] Building with Nuitka --standalone...
-if exist "dist\app.dist" rmdir /S /Q "dist\app.dist"
-if exist "dist\DM40 Wireless" rmdir /S /Q "dist\DM40 Wireless"
+REM --- Nuitka build (onefile: single exe; slower cold start, AV may flag it) ---
+echo [3/4] Building with Nuitka --onefile...
+if exist "dist\DM40 Wireless.exe" del /F /Q "dist\DM40 Wireless.exe"
 
 "%PY%" -m nuitka ^
-  --standalone ^
+  --onefile ^
   --windows-console-mode=disable ^
   --windows-icon-from-ico=images/app.ico ^
-  --company-name="Urobotos" ^
-  --product-name="DM40 Wireless" ^
-  --file-description="DM40 Wireless - Bluetooth multimeter desktop app" ^
-  --file-version=1.2.0 ^
-  --product-version=1.2.0 ^
-  --copyright="Copyright (C) 2026 Urobotos" ^
   --enable-plugin=tk-inter ^
   --include-data-dir=images=images ^
   --include-data-files=i18n/en-US.toml=i18n/en-US.toml ^
@@ -113,46 +106,48 @@ if errorlevel 1 (
     exit /b 1
 )
 
-REM --- Verify output and prepare distribution folder ---
+REM --- Verify output and clean intermediate folders ---
 echo [4/4] Verifying output and copying external assets...
-if not exist "dist\app.dist\DM40 Wireless.exe" (
-    echo [ERROR] Output exe not found in dist\app.dist\
+if not exist "dist\DM40 Wireless.exe" (
+    echo [ERROR] Output exe not found in dist\.
     pause
     exit /b 1
 )
 
-REM Rename Nuitka default folder to a clear distribution name
-move /Y "dist\app.dist" "dist\DM40 Wireless" >nul
-if errorlevel 1 (
-    echo [ERROR] Failed to rename dist\app.dist to dist\DM40 Wireless
-    pause
-    exit /b 1
-)
+REM Remove intermediate Nuitka folders left by onefile builds
+if exist "dist\DM40 Wireless.build" rmdir /S /Q "dist\DM40 Wireless.build"
+if exist "dist\DM40 Wireless.onefile-build" rmdir /S /Q "dist\DM40 Wireless.onefile-build"
 
-REM Copy i18n language files next to the exe (external, editable)
+REM Copy i18n language files next to the exe (external, editable;
+REM en-US.toml is also embedded inside the exe as a read-only fallback)
 if exist "i18n" (
-    if not exist "dist\DM40 Wireless\i18n" mkdir "dist\DM40 Wireless\i18n"
-    xcopy /Y /E "i18n\*.toml" "dist\DM40 Wireless\i18n\" >nul 2>&1
-    echo   i18n\ copied to dist\DM40 Wireless\i18n\
+    if not exist "dist\i18n" mkdir "dist\i18n"
+    xcopy /Y /E "i18n\*.toml" "dist\i18n\" >nul 2>&1
+    echo   i18n\ copied to dist\i18n\
 )
 
 REM Copy settings template as default config
-if not exist "dist\DM40 Wireless\settings.json" (
-    copy /Y "settings.example.json" "dist\DM40 Wireless\settings.json" >nul 2>&1
-    echo   settings.example.json copied to dist\DM40 Wireless\settings.json
+if not exist "dist\settings.json" (
+    copy /Y "settings.example.json" "dist\settings.json" >nul 2>&1
+    echo   settings.example.json copied to dist\settings.json
 )
 
 echo.
 echo ============================================
 echo  Build succeeded
-echo  Output folder: dist\DM40 Wireless\
+echo  Output: dist\DM40 Wireless.exe
 echo.
-echo  Distribution folder contents:
-echo    dist\DM40 Wireless\DM40 Wireless.exe
-echo    dist\DM40 Wireless\           (runtime DLLs / bundled data)
-echo    dist\DM40 Wireless\i18n\      (language files)
-echo    dist\DM40 Wireless\settings.json
+echo  Distribution files (next to the exe):
+echo    i18n\      (language files - editable)
+echo    settings.json
+echo.
+echo  Note: the exe is self-contained, but settings and
+echo  language files are stored next to it and must stay together.
+echo.
+echo  Caution: --onefile extracts to a temp folder at startup
+echo  (slower cold start) and is more likely to trigger antivirus
+echo  false positives. Prefer build_exe.bat (--standalone) if this
+echo  becomes an issue.
 echo ============================================
 echo.
-echo  Note: Keep the whole folder together - do not move the exe alone.
 pause
