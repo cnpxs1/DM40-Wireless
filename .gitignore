@@ -51,3 +51,4 @@ images/Photoshop/
 release/
 *.zip
 CLAUDE.md
+tests/
