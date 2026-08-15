@@ -203,9 +203,11 @@ echo %CYAN%╟——————————————————————
 echo %CYAN%║%RST%  %WHITE%Output folder:%RST% dist\DM40 Wireless\                                    %CYAN%║%RST%
 echo %CYAN%║%RST%                                                                        %CYAN%║%RST%
 echo %CYAN%║%RST%  %WHITE%Distribution folder contents:%RST%                                         %CYAN%║%RST%
-echo %CYAN%║%RST%    dist\DM40 Wireless\DM40 Wireless.exe  (self-contained exe)          %CYAN%║%RST%
-echo %CYAN%║%RST%    dist\DM40 Wireless\i18n\      (language files - editable)           %CYAN%║%RST%
-echo %CYAN%║%RST%    dist\DM40 Wireless\settings.json                                    %CYAN%║%RST%
+echo %CYAN%║%RST%    DM40 Wireless\                                                      %CYAN%║%RST%
+echo %CYAN%║%RST%    ├── DM40 Wireless.exe  (self-contained exe)                         %CYAN%║%RST%
+echo %CYAN%║%RST%    ├── i18n\      (language files - editable)                          %CYAN%║%RST%
+echo %CYAN%║%RST%    └── settings.json                                                   %CYAN%║%RST%
+echo %CYAN%║%RST%                                                                        %CYAN%║%RST%
 echo %CYAN%╚════════════════════════════════════════════════════════════════════════╝%RST%
 echo.
 echo %NOTE% The exe is self-contained, but settings and language files are stored next to it.
