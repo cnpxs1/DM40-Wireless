@@ -1,13 +1,55 @@
 @echo off
+chcp 65001 >nul
+setlocal EnableExtensions
+
+REM --- ANSI colors ---
+for /F %%a in ('echo prompt $E^| cmd') do set "ESC=%%a"
+
+set "RST=%ESC%[0m"
+set "RED=%ESC%[91m"
+set "GREEN=%ESC%[92m"
+set "YELLOW=%ESC%[93m"
+set "ORANGE=%ESC%[33m"
+set "BLUE=%ESC%[94m"
+set "CYAN=%ESC%[96m"
+set "WHITE=%ESC%[97m"
+set "GRAY=%ESC%[90m"
+
+REM --- Message tags ---
+set "STEP=%CYAN%"
+set "SUCCESS=%GREEN%[SUCCESS]%RST%"
+set "ERROR=%RED%[ERROR]%RST%"
+set "WARNING=%ORANGE%[WARNING]%RST%"
+set "NOTE=%YELLOW%[NOTE]%RST%"
+set "INFO=%GRAY%[INFO]%RST%"
+set "SKIP=%GRAY%[SKIP]%RST%"
+
 cd /d "%~dp0"
-echo ============================================
-echo  DM40 Wireless - Nuitka + MSVC Onefile Build
-echo ============================================
+
+echo %CYAN%╔════════════════════════════════════════════════════════════════════════╗%RST%
+echo %CYAN%║%RST%               %WHITE%DM40 Wireless - Nuitka + MSVC Onefile Build%RST%              %CYAN%║%RST%
+echo %CYAN%║%RST%                   %GRAY%Bluetooth Multimeter Desktop App%RST%                     %CYAN%║%RST%
+echo %CYAN%╚════════════════════════════════════════════════════════════════════════╝%RST%
+echo.
+
+echo %CYAN%██████╗ ███╗   ███╗██╗  ██╗ ██████╗%RST%
+echo %CYAN%██╔══██╗████╗ ████║██║  ██║██╔═████╗%RST%
+echo %CYAN%██║  ██║██╔████╔██║███████║██║██╔██║%RST%
+echo %CYAN%██║  ██║██║╚██╔╝██║╚════██║████╔╝██║%RST%
+echo %CYAN%██████╔╝██║ ╚═╝ ██║     ██║╚██████╔╝%RST%
+echo %CYAN%╚═════╝ ╚═╝     ╚═╝     ╚═╝ ╚═════╝ %RST%
+echo.
+echo %BLUE%██╗    ██╗██╗██████╗ ███████╗██╗     ███████╗███████╗███████╗%RST%
+echo %BLUE%██║    ██║██║██╔══██╗██╔════╝██║     ██╔════╝██╔════╝██╔════╝%RST%
+echo %BLUE%██║ █╗ ██║██║██████╔╝█████╗  ██║     █████╗  ███████╗███████╗%RST%
+echo %BLUE%██║███╗██║██║██╔══██╗██╔══╝  ██║     ██╔══╝  ╚════██║╚════██║%RST%
+echo %BLUE%╚███╔███╔╝██║██║  ██║███████╗███████╗███████╗███████║███████║%RST%
+echo %BLUE% ╚══╝╚══╝ ╚═╝╚═╝  ╚═╝╚══════╝╚══════╝╚══════╝╚══════╝╚══════╝%RST%
 echo.
 
 REM --- Validate virtual environment ---
 if not exist .venv\Scripts\python.exe (
-    echo [ERROR] Virtual environment not found. Run install.bat first.
+    echo %ERROR% Virtual environment not found. Run install.bat first.
     pause
     exit /b 1
 )
@@ -19,16 +61,19 @@ taskkill /IM "DM40 Wireless.exe" /F >nul 2>&1
 timeout /t 1 /nobreak >nul
 
 REM --- Ensure Nuitka is installed ---
-echo [1/4] Checking Nuitka installation...
+echo %STEP%[1/4]%RST% %WHITE%Checking Nuitka installation...%RST%
 "%PY%" -m pip install --upgrade nuitka >nul 2>&1
 if errorlevel 1 (
-    echo [ERROR] Failed to install Nuitka.
+    echo %ERROR% Failed to install Nuitka.
     pause
     exit /b 1
 )
+echo %SUCCESS% Nuitka is installed and up to date.
 
 REM --- Auto-detect and activate MSVC compiler toolchain ---
-echo [2/4] Activating MSVC compiler...
+echo.
+echo %STEP%[2/4]%RST% %WHITE%Activating MSVC compiler...%RST%
+echo.
 set "MSVC_VARS="
 
 REM Priority 1: vswhere.exe (VS installer tool)
@@ -64,29 +109,37 @@ if not defined MSVC_VARS (
 )
 
 if not defined MSVC_VARS (
-    echo [ERROR] MSVC vcvars64.bat not found.
-    echo   Install Visual Studio 2022+ with "Desktop development with C++" workload.
-    echo   If VS is installed in a custom path, set MSVC_VARS manually in this script.
+    echo %ERROR% MSVC vcvars64.bat not found.
+    echo Install Visual Studio 2022+ with "Desktop development with C++" workload.
+    echo If VS is installed in a custom path, set MSVC_VARS manually in this script.
     pause
     exit /b 1
 )
 
-echo   Found: %MSVC_VARS%
+echo Found: %MSVC_VARS%
 call "%MSVC_VARS%"
 if errorlevel 1 (
-    echo [ERROR] MSVC environment setup failed.
+    echo %ERROR% MSVC environment setup failed.
     pause
     exit /b 1
 )
 
 REM --- Nuitka build (onefile: single exe; slower cold start, AV may flag it) ---
-echo [3/4] Building with Nuitka --onefile...
+echo.
+echo %STEP%[3/4]%RST% %WHITE%Building with Nuitka --onefile...%RST%
+echo.
 if exist "dist\DM40 Wireless.exe" del /F /Q "dist\DM40 Wireless.exe"
 
 "%PY%" -m nuitka ^
   --onefile ^
   --windows-console-mode=disable ^
   --windows-icon-from-ico=images/app.ico ^
+  --company-name="Urobotos" ^
+  --product-name="DM40 Wireless" ^
+  --file-description="DM40 Wireless - Bluetooth multimeter desktop app" ^
+  --file-version=1.2.0 ^
+  --product-version=1.2.0 ^
+  --copyright="Copyright (C) 2026 Urobotos" ^
   --enable-plugin=tk-inter ^
   --include-data-dir=images=images ^
   --include-data-files=i18n/en-US.toml=i18n/en-US.toml ^
@@ -101,15 +154,16 @@ if exist "dist\DM40 Wireless.exe" del /F /Q "dist\DM40 Wireless.exe"
 
 if errorlevel 1 (
     echo.
-    echo [ERROR] Build failed.
+    echo %ERROR% Build failed.
     pause
     exit /b 1
 )
 
-REM --- Verify output and clean intermediate folders ---
-echo [4/4] Verifying output and preparing distribution folder...
+REM --- Verify output and prepare distribution folder ---
+echo.
+echo %STEP%[4/4]%RST% %WHITE%Verifying output and copying external assets...%RST%
 if not exist "dist\DM40 Wireless.exe" (
-    echo [ERROR] Output exe not found in dist\.
+    echo %ERROR% Output exe not found in dist\.
     pause
     exit /b 1
 )
@@ -123,7 +177,7 @@ if exist "dist\DM40 Wireless" rmdir /S /Q "dist\DM40 Wireless"
 mkdir "dist\DM40 Wireless"
 move /Y "dist\DM40 Wireless.exe" "dist\DM40 Wireless\DM40 Wireless.exe" >nul
 if errorlevel 1 (
-    echo [ERROR] Failed to move exe into dist\DM40 Wireless\
+    echo %ERROR% Failed to move exe into dist\DM40 Wireless\
     pause
     exit /b 1
 )
@@ -133,32 +187,33 @@ REM en-US.toml is also embedded inside the exe as a read-only fallback)
 if exist "i18n" (
     if not exist "dist\DM40 Wireless\i18n" mkdir "dist\DM40 Wireless\i18n"
     xcopy /Y /E "i18n\*.toml" "dist\DM40 Wireless\i18n\" >nul 2>&1
-    echo   i18n\ copied to dist\DM40 Wireless\i18n\
+    echo %INFO% i18n\ copied to: dist\DM40 Wireless\i18n\
 )
 
 REM Copy settings template as default config
 if not exist "dist\DM40 Wireless\settings.json" (
     copy /Y "settings.example.json" "dist\DM40 Wireless\settings.json" >nul 2>&1
-    echo   settings.example.json copied to dist\DM40 Wireless\settings.json
+    echo %INFO% settings.example.json copied to: dist\DM40 Wireless\settings.json
 )
 
 echo.
-echo ============================================
-echo  Build succeeded
-echo  Output: dist\DM40 Wireless\DM40 Wireless.exe
+echo %CYAN%╔════════════════════════════════════════════════════════════════════════╗%RST%
+echo %CYAN%║%RST%                            %GREEN%Build succeeded! %RST%                           %CYAN%║%RST%
+echo %CYAN%╟————————————————————————————————————————————————————————————————————————╢%RST%
+echo %CYAN%║%RST%  %WHITE%Output folder:%RST% dist\DM40 Wireless\                                    %CYAN%║%RST%
+echo %CYAN%║%RST%                                                                        %CYAN%║%RST%
+echo %CYAN%║%RST%  %WHITE%Distribution folder contents:%RST%                                         %CYAN%║%RST%
+echo %CYAN%║%RST%    DM40 Wireless\                                                      %CYAN%║%RST%
+echo %CYAN%║%RST%    ├── DM40 Wireless.exe  (self-contained exe)                         %CYAN%║%RST%
+echo %CYAN%║%RST%    ├── i18n\      (language files - editable)                          %CYAN%║%RST%
+echo %CYAN%║%RST%    └── settings.json                                                   %CYAN%║%RST%
+echo %CYAN%║%RST%                                                                        %CYAN%║%RST%
+echo %CYAN%╚════════════════════════════════════════════════════════════════════════╝%RST%
 echo.
-echo  Distribution files:
-echo    DM40 Wireless.exe   (self-contained single exe)
-echo    i18n\               (language files - editable)
-echo    settings.json
+echo %NOTE% The exe is self-contained, but settings and language files are stored next to it.
+echo %NOTE% Keep the whole folder together - do not move the exe alone.
 echo.
-echo  Note: the exe is self-contained, but settings and
-echo  language files are stored next to it and must stay together.
-echo.
-echo  Caution: --onefile extracts to a temp folder at startup
-echo  (slower cold start) and is more likely to trigger antivirus
-echo  false positives. Prefer build_exe.bat (--standalone) if this
-echo  becomes an issue.
-echo ============================================
-echo.
+echo %WARNING% --onefile extracts to a temp folder at startup (slower cold start) and is
+echo %WARNING% more likely to trigger antivirus false positives. Prefer build_exe.bat
+echo %WARNING% (--standalone) if this becomes an issue.
 pause
