@@ -39,9 +39,16 @@ BTN_LABELS = {
 
 
 def btn_label(cmd_key: str) -> str:
-    """Return display label for mode button (with i18n fallback)."""
+    """Return display label for mode button (with i18n fallback).
+
+    TOML keys spell the ``+`` separator as ``_`` (``VDC+VAC`` → ``mode_btn.VDC_VAC``),
+    so the command key is normalized before the lookup. Returns ``cmd_key`` itself
+    for command keys without a translatable label (VDC / VAC / OHM / …).
+    """
     from core.i18n import t
-    return t(f"mode_btn.{cmd_key}") if cmd_key in BTN_LABELS else cmd_key
+    if cmd_key not in BTN_LABELS:
+        return cmd_key
+    return t(f"mode_btn.{cmd_key.replace('+', '_')}")
 
 
 class ModeState:

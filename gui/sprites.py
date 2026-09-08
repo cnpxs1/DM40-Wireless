@@ -193,16 +193,24 @@ class SpriteCache:
             from PIL import Image, ImageTk
         except ImportError:
             return None
-        img = Image.open(path).convert("RGBA")
-        w, h = img.size
-        if max_width or max_height:
-            tw = max_width or w
-            th = max_height or h
-            ratio = min(tw / w, th / h)
-            nw, nh = max(1, int(w * ratio)), max(1, int(h * ratio))
-            img = img.resize((nw, nh), Image.Resampling.LANCZOS)
-        elif scale != 1.0:
-            img = img.resize((max(1, int(w * scale)), max(1, int(h * scale)), Image.Resampling.LANCZOS))
+        try:
+            img = Image.open(path).convert("RGBA")
+            w, h = img.size
+            if max_width or max_height:
+                tw = max_width or w
+                th = max_height or h
+                ratio = min(tw / w, th / h)
+                nw, nh = max(1, int(w * ratio)), max(1, int(h * ratio))
+                img = img.resize((nw, nh), Image.Resampling.LANCZOS)
+            elif scale != 1.0:
+                img = img.resize(
+                    (max(1, int(w * scale)), max(1, int(h * scale))),
+                    Image.Resampling.LANCZOS,
+                )
+        except (OSError, ValueError):
+            # Corrupt / truncated image – treat as missing so callers can
+            # fall back (e.g. text-only mode buttons).
+            return None
         photo = ImageTk.PhotoImage(img)
         self._cache[key] = photo
         return photo

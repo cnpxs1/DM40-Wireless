@@ -551,14 +551,54 @@ class MainScreen(tk.Frame):
         for (gid, _opts), (x, y, w, h) in zip(MODE_CYCLE_GROUPS, slots):
             rx, ry, rw, rh = self._s(x), self._s(y), self._s(w), self._s(h)
             self._place_mode_button_bg(gid, rx, ry, rw, rh, gid == active)
-            photo = self.sprites.mode_button(mode_state.current_cmd_key(gid), s, max_w=rw - 4, max_h=rh - 4)
+            cmd_key = mode_state.current_cmd_key(gid)
+            photo = self.sprites.mode_button(cmd_key, s, max_w=rw - 4, max_h=rh - 4)
             if photo:
                 self.canvas.create_image(
                     rx + rw // 2, ry + rh // 2, image=photo,
                     tags=("mode_btn", f"mode_img_{gid}"),
                 )
+            else:
+                # PNG missing (deleted / incomplete unpack) – draw a text button
+                # so the mode is still visible; falls back per language (btn_label).
+                self._place_mode_button_text(gid, cmd_key, rx, ry, rw, rh)
         self._rebind_mode_hotspots(slots)
         self.raise_click_layer()
+
+    def _place_mode_button_text(
+        self, gid: str, cmd_key: str, rx: int, ry: int, rw: int, rh: int,
+    ) -> None:
+        """Render a text-only MODE button when its PNG is not available.
+
+        Font is sized from the slot and shrunk so the widest line still fits
+        (labels may be two lines, e.g. "OHM\\nONLINE" → "OHM\\n在线").
+        """
+        from core.modes import btn_label
+        label = btn_label(cmd_key)
+        lines = label.split("\n")
+        size = max(7, int(rh * (0.30 if len(lines) > 1 else 0.42)))
+        font = gui_font(self.app.settings, size, "normal")
+        try:
+            from tkinter import font as tkfont
+            # Reuse one Font object across shrink passes (recreating it would
+            # leak a named Tcl font per pass).
+            mf = tkfont.Font(font=font)
+            for _ in range(3):
+                widest = max(mf.measure(ln) for ln in lines)
+                line_h = int(size * 1.35) * len(lines)
+                if (widest <= rw - 8 and line_h <= rh - 4) or size <= 7:
+                    break
+                size = max(7, int(size * min((rw - 8) / max(widest, 1),
+                                             (rh - 4) / max(line_h, 1))))
+                font = gui_font(self.app.settings, size, "normal")
+                mf.configure(family=font[0], size=font[1], weight=font[2])
+        except tk.TclError:
+            pass  # measurement unavailable – draw with the last computed font
+        self.canvas.create_text(
+            rx + rw // 2, ry + rh // 2, text=label, anchor="center",
+            font=font, fill=rgb_hex("text_primary"), justify="center",
+            tags=("mode_btn", f"mode_txt_{gid}"),
+        )
 
     def _rebind_mode_hotspots(self, slots: list[tuple[int, int, int, int]]) -> None:
         dbg = self._debug_hotspots
