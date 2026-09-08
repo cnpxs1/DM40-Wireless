@@ -591,7 +591,9 @@ class MainScreen(tk.Frame):
                 size = max(7, int(size * min((rw - 8) / max(widest, 1),
                                              (rh - 4) / max(line_h, 1))))
                 font = gui_font(self.app.settings, size, "normal")
-                mf.configure(family=font[0], size=font[1], weight=font[2])
+                # family/weight are constant across passes – update size only
+                # (also keeps tkinter's weight Literal["normal","bold"] typing).
+                mf.configure(size=font[1])
         except tk.TclError:
             pass  # measurement unavailable – draw with the last computed font
         self.canvas.create_text(
@@ -649,7 +651,7 @@ class MainScreen(tk.Frame):
             text_key = f"save_{i}"
             unit_key = f"save_{i}_unit"
             cy = self._s(sy + sh // 2)
-            active = self._save_slots.last_index == i and reading.text
+            active = self._save_slots.last_index == i and bool(reading.text)
 
             if not reading.text:
                 self._set_canvas_text(text_key, "")
