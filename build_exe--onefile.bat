@@ -76,32 +76,36 @@ echo %STEP%[2/4]%RST% %WHITE%Activating MSVC compiler...%RST%
 echo.
 set "MSVC_VARS="
 
-REM Priority 1: vswhere.exe (VS installer tool)
-set "VSWHERE=%ProgramFiles(x86)%\Microsoft Visual Studio\Installer\vswhere.exe"
-if exist "%VSWHERE%" (
+REM Priority 1: vswhere.exe (VS installer tool). It reads the VS registry, so
+REM it finds VS wherever it is installed and always reports the newest one.
+set "VSWHERE="
+if defined ProgramFiles(x86) set "VSWHERE=%ProgramFiles(x86)%\Microsoft Visual Studio\Installer\vswhere.exe"
+if not defined MSVC_VARS if exist "%VSWHERE%" (
     for /f "usebackq tokens=*" %%i in (`"%VSWHERE%" -latest -property installationPath 2^>nul`) do (
-        if exist "%%i\VC\Auxiliary\Build\vcvars64.bat" (
+        if not defined MSVC_VARS if exist "%%i\VC\Auxiliary\Build\vcvars64.bat" (
             set "MSVC_VARS=%%i\VC\Auxiliary\Build\vcvars64.bat"
         )
     )
 )
 
-REM Priority 2: scan common VS install directories
-if not defined MSVC_VARS (
-    for %%e in (Professional Community Enterprise BuildTools) do (
-        for %%y in (2026 2025 2022) do (
-            if exist "D:\Software\Microsoft Visual Studio\%%y\%%e\VC\Auxiliary\Build\vcvars64.bat" (
-                set "MSVC_VARS=D:\Software\Microsoft Visual Studio\%%y\%%e\VC\Auxiliary\Build\vcvars64.bat"
+REM Priority 2: scan a custom install root. Set VS_ROOT to your Visual Studio
+REM root folder (the one holding the version folders, e.g. 2026\ or 2022\) if VS
+REM lives outside Program Files. Versions are discovered, newest scanned first.
+if not defined MSVC_VARS if defined VS_ROOT (
+    for /f "delims=" %%y in ('dir /b /ad /o-n "%VS_ROOT%" 2^>nul') do (
+        for %%e in (Professional Community Enterprise BuildTools) do (
+            if not defined MSVC_VARS if exist "%VS_ROOT%\%%y\%%e\VC\Auxiliary\Build\vcvars64.bat" (
+                set "MSVC_VARS=%VS_ROOT%\%%y\%%e\VC\Auxiliary\Build\vcvars64.bat"
             )
         )
     )
 )
 
-REM Priority 3: default Program Files installs
+REM Priority 3: default Program Files installs, newest version first
 if not defined MSVC_VARS (
-    for %%e in (Professional Community Enterprise BuildTools) do (
-        for %%y in (2026 2025 2022) do (
-            if exist "%ProgramFiles%\Microsoft Visual Studio\%%y\%%e\VC\Auxiliary\Build\vcvars64.bat" (
+    for /f "delims=" %%y in ('dir /b /ad /o-n "%ProgramFiles%\Microsoft Visual Studio" 2^>nul') do (
+        for %%e in (Professional Community Enterprise BuildTools) do (
+            if not defined MSVC_VARS if exist "%ProgramFiles%\Microsoft Visual Studio\%%y\%%e\VC\Auxiliary\Build\vcvars64.bat" (
                 set "MSVC_VARS=%ProgramFiles%\Microsoft Visual Studio\%%y\%%e\VC\Auxiliary\Build\vcvars64.bat"
             )
         )
@@ -111,7 +115,7 @@ if not defined MSVC_VARS (
 if not defined MSVC_VARS (
     echo %ERROR% MSVC vcvars64.bat not found.
     echo Install Visual Studio 2022+ with "Desktop development with C++" workload.
-    echo If VS is installed in a custom path, set MSVC_VARS manually in this script.
+    echo If VS is installed outside Program Files, set VS_ROOT to its root folder and retry.
     pause
     exit /b 1
 )
