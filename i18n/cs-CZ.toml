@@ -1,8 +1,11 @@
 # language name: Čeština (cs-CZ)
+# "language name:" ponechte v angličtině – aplikace podle něj rozpozná jazyk.
 
+# Globální
 [app]
 title = "DM40 Wireless"
 
+# Připojení
 [setup]
 title = "Připojení"
 hint = "Zapněte Bluetooth na DM40 a klepněte na Hledat."
@@ -16,20 +19,24 @@ status_select_first = "Nejprve vyberte zařízení ze seznamu."
 btn_search = "Hledat"
 btn_connect = "Připojit"
 
-[settings]
-title = "Nastavení"
-label_mini_app = "Mini aplikace"
-label_always_on_top = "Vždy navrchu"
-label_raw_console = "Konzole RAW dat"
-label_language = "Jazyk"
-import_title = "Import jazykového souboru"
-import_error_title = "Import selhal"
-import_error_msg = "Import jazykového souboru selhal: {error}"
-btn_folder = "Složka"
-btn_import = "Import"
-state_on = "ZAP"
-state_off = "VYP"
+# Hlavní obrazovka
+[main]
+bt_off = "Zapněte Bluetooth"
 
+[mode_btn]
+HZ = "Hz"
+OHM_ONLINE = "OHM\nONLINE"
+VDC_plus_VAC = "VDC+VAC"
+ADC_plus_AAC = "ADC+AAC"
+CAP = "CAP"
+DIODE = "DIODE"
+CONT = "CONT"
+TEMP = "TEMP"
+
+[graph]
+rel = "REL"
+
+# Rozsah
 [range]
 title = "Rozsah"
 title_no_mode = "Rozsah — nejprve zvolte režim V / A / Ω"
@@ -54,24 +61,17 @@ current_ac_dc = "AC+DC"
 resistor_offline = "Off line"
 resistor_online = "On line"
 
-[main]
-bt_off = "Zapněte Bluetooth"
-hold = "HOLD"
-run = "RUN"
-auto_plus = "AUTO+"
-auto = "AUTO"
-ol = "OL"
-placeholder = "---"
+# Nastavení
+[settings]
+title = "Nastavení"
+label_mini_app = "Mini aplikace"
+label_always_on_top = "Vždy navrchu"
+label_raw_console = "Konzole RAW dat"
+label_language = "Jazyk"
+state_on = "ZAP"
+state_off = "VYP"
 
-[mode_btn]
-HZ = "Hz"
-OHM_ONLINE = "OHM\nONLINE"
-VDC_VAC = "VDC+VAC"
-ADC_AAC = "ADC+AAC"
-
-[graph]
-rel = "REL"
-
+# Protokol konzole
 [ble]
 console_connecting = "Hledám zařízení {mac}..."
 console_connected = "Připojeno."

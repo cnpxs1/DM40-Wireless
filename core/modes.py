@@ -30,25 +30,32 @@ KIND_TO_CMD = {
     "TEMP": "TEMP",
 }
 
+# MODE button text-fallback whitelist (see btn_label). Values are unused –
+# the actual label always comes from ``mode_btn.*`` in the i18n TOML files.
+# Command keys absent here render as the raw key (VDC / VAC / ADC / …).
 BTN_LABELS = {
     "HZ": "Hz",
     "OHM_ONLINE": "OHM\nONLINE",
     "VDC+VAC": "VDC+VAC",
     "ADC+AAC": "ADC+AAC",
+    "CAP": "CAP",
+    "DIODE": "DIODE",
+    "CONT": "CONT",
+    "TEMP": "TEMP",
 }
 
 
 def btn_label(cmd_key: str) -> str:
     """Return display label for mode button (with i18n fallback).
 
-    TOML keys spell the ``+`` separator as ``_`` (``VDC+VAC`` → ``mode_btn.VDC_VAC``),
-    so the command key is normalized before the lookup. Returns ``cmd_key`` itself
+    The command key is normalized via :func:`core.i18n.toml_key` before the
+    lookup (``VDC+VAC`` → ``mode_btn.VDC_plus_VAC``). Returns ``cmd_key`` itself
     for command keys without a translatable label (VDC / VAC / OHM / …).
     """
-    from core.i18n import t
+    from core.i18n import t, toml_key
     if cmd_key not in BTN_LABELS:
         return cmd_key
-    return t(f"mode_btn.{cmd_key.replace('+', '_')}")
+    return t(f"mode_btn.{toml_key(cmd_key)}")
 
 
 class ModeState:

@@ -1,8 +1,11 @@
 # language name: 简体中文 (zh-CN)
+# "language name:" 前缀保持英文，程序依赖其识别语言种类
 
+# 全局
 [app]
 title = "DM40 Wireless"
 
+# 连接界面
 [setup]
 title = "连接"
 hint = "在您的DM40上启用蓝牙，然后点击搜索。"
@@ -16,20 +19,24 @@ status_select_first = "请先从列表中选择一台设备。"
 btn_search = "搜索"
 btn_connect = "连接"
 
-[settings]
-title = "设置"
-label_mini_app = "迷你窗口"
-label_always_on_top = "窗口置顶"
-label_raw_console = "RAW 数据控制台"
-label_language = "语言"
-import_title = "导入语言文件"
-import_error_title = "导入失败"
-import_error_msg = "导入语言文件失败：{error}"
-btn_folder = "文件夹"
-btn_import = "导入"
-state_on = "开"
-state_off = "关"
+# 主界面
+[main]
+bt_off = "请开启蓝牙"
 
+[mode_btn]
+HZ = "Hz"
+OHM_ONLINE = "OHM\n在线"
+VDC_plus_VAC = "VDC+VAC"
+ADC_plus_AAC = "ADC+AAC"
+CAP = "电容"
+DIODE = "二极管"
+CONT = "通断"
+TEMP = "温度"
+
+[graph]
+rel = "相对值"
+
+# 量程
 [range]
 title = "量程"
 title_no_mode = "量程 — 请先选择 V / A / Ω 模式"
@@ -54,24 +61,17 @@ current_ac_dc = "AC+DC"
 resistor_offline = "离线"
 resistor_online = "在线"
 
-[main]
-bt_off = "请开启蓝牙"
-hold = "保持"
-run = "运行"
-auto_plus = "AUTO+"
-auto = "AUTO"
-ol = "超量程"
-placeholder = "---"
+# 设置
+[settings]
+title = "设置"
+label_mini_app = "迷你窗口"
+label_always_on_top = "窗口置顶"
+label_raw_console = "RAW 数据控制台"
+label_language = "语言"
+state_on = "开"
+state_off = "关"
 
-[mode_btn]
-HZ = "Hz"
-OHM_ONLINE = "OHM\n在线"
-VDC_VAC = "VDC+VAC"
-ADC_AAC = "ADC+AAC"
-
-[graph]
-rel = "相对值"
-
+# 控制台日志
 [ble]
 console_connecting = "正在查找设备 {mac}..."
 console_connected = "已连接。"

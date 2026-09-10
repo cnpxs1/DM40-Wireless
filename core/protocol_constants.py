@@ -32,9 +32,8 @@ VOLTAGE_RANGE_SLOT = {
 
 def range_screen_title(kind: str) -> str:
     """Return internationalized range screen title for the given measurement kind."""
-    from core.i18n import t
-    key = kind.replace("+", "_plus_")
-    return t(f"range_titles.{key}")
+    from core.i18n import t, toml_key
+    return t(f"range_titles.{toml_key(kind)}")
 
 # Keep RANGE_SCREEN_TITLES as backward-compatible default fallback
 RANGE_SCREEN_TITLES = {

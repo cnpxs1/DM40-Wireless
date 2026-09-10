@@ -220,6 +220,16 @@ def get_i18n() -> _I18n:
     return _i18n_instance
 
 
+def toml_key(name: str) -> str:
+    """Normalize a runtime identifier into a TOML key segment.
+
+    TOML bare keys cannot contain ``+``, so it is spelled ``_plus_``
+    (``VDC+VAC`` → ``VDC_plus_VAC``). Every dynamic ``t(f"...")`` lookup goes
+    through this helper, so the escaping rule lives in exactly one place.
+    """
+    return name.replace("+", "_plus_")
+
+
 def t(key: str, **fmt_kwargs: Any) -> str:
     """Shortcut: return translation. Same as ``get_i18n().t(key, ...)``."""
     return get_i18n().t(key, **fmt_kwargs)

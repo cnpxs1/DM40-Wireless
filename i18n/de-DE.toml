@@ -1,8 +1,11 @@
 # language name: Deutsch (de-DE)
+# "language name:" muss auf Englisch bleiben – die App erkennt daran die Sprache.
 
+# Global
 [app]
 title = "DM40 Wireless"
 
+# Verbindung
 [setup]
 title = "Verbinden"
 hint = "Bluetooth am DM40 aktivieren, dann Suchen tippen."
@@ -16,20 +19,24 @@ status_select_first = "Bitte zuerst ein Gerät aus der Liste wählen."
 btn_search = "Suchen"
 btn_connect = "Verbinden"
 
-[settings]
-title = "Einstellungen"
-label_mini_app = "Mini-App"
-label_always_on_top = "Immer im Vordergrund"
-label_raw_console = "RAW-Datenkonsole"
-label_language = "Sprache"
-import_title = "Sprachdatei importieren"
-import_error_title = "Import fehlgeschlagen"
-import_error_msg = "Sprachdatei konnte nicht importiert werden: {error}"
-btn_folder = "Ordner"
-btn_import = "Import"
-state_on = "EIN"
-state_off = "AUS"
+# Hauptansicht
+[main]
+bt_off = "Bluetooth einschalten"
 
+[mode_btn]
+HZ = "Hz"
+OHM_ONLINE = "OHM\nONLINE"
+VDC_plus_VAC = "VDC+VAC"
+ADC_plus_AAC = "ADC+AAC"
+CAP = "CAP"
+DIODE = "DIODE"
+CONT = "CONT"
+TEMP = "TEMP"
+
+[graph]
+rel = "REL"
+
+# Messbereich
 [range]
 title = "Messbereich"
 title_no_mode = "Messbereich — zuerst V / A / Ω Modus wählen"
@@ -54,24 +61,17 @@ current_ac_dc = "AC+DC"
 resistor_offline = "Off line"
 resistor_online = "On line"
 
-[main]
-bt_off = "Bluetooth einschalten"
-hold = "HOLD"
-run = "RUN"
-auto_plus = "AUTO+"
-auto = "AUTO"
-ol = "OL"
-placeholder = "---"
+# Einstellungen
+[settings]
+title = "Einstellungen"
+label_mini_app = "Mini-App"
+label_always_on_top = "Immer im Vordergrund"
+label_raw_console = "RAW-Datenkonsole"
+label_language = "Sprache"
+state_on = "EIN"
+state_off = "AUS"
 
-[mode_btn]
-HZ = "Hz"
-OHM_ONLINE = "OHM\nONLINE"
-VDC_VAC = "VDC+VAC"
-ADC_AAC = "ADC+AAC"
-
-[graph]
-rel = "REL"
-
+# Konsolenprotokoll
 [ble]
 console_connecting = "Suche Gerät {mac}..."
 console_connected = "Verbunden."
