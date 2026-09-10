@@ -22,6 +22,8 @@ btn_connect = "Připojit"
 # Hlavní obrazovka
 [main]
 bt_off = "Zapněte Bluetooth"
+run = "RUN"
+hold = "HOLD"
 
 [mode_btn]
 HZ = "Hz"

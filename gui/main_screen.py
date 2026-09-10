@@ -165,7 +165,7 @@ class MainScreen(tk.Frame):
             fill=rgb_hex("text_primary"), anchor="w", font=top_font,
         )
         self._text_ids["hold_text"] = self.canvas.create_text(
-            self._s(L.HOLD_IMG[0]), self._top_bar_status_y(L.HOLD_IMG[1]), text="RUN",
+            self._s(L.HOLD_IMG[0]), self._top_bar_status_y(L.HOLD_IMG[1]), text=t("main.run"),
             fill=rgb_hex("text_primary"), anchor="w", font=top_font,
         )
 
@@ -298,7 +298,7 @@ class MainScreen(tk.Frame):
             return
         self._last_hold = hold
         self._hide_sprite("hold_run")
-        self._set_canvas_text("hold_text", "HOLD" if hold else "RUN")
+        self._set_canvas_text("hold_text", t("main.hold") if hold else t("main.run"))
 
     def _set_settings_display(self) -> None:
         photo = self._top_bar_icon("settings.png", L.TOP_BAR_SETTINGS_W)
@@ -728,6 +728,7 @@ class MainScreen(tk.Frame):
         self._graph.refresh_rel_text()
         if self._bt_off_display:
             self._layout_main_value(t("main.bt_off"))
+        self._set_hold_display(bool(self._last_hold), force=True)
         self.raise_click_layer()
 
     def release_hold_freeze(self) -> None:

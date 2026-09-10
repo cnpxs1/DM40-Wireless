@@ -22,6 +22,8 @@ btn_connect = "連線"
 # 主畫面
 [main]
 bt_off = "請開啟藍牙"
+run = "RUN"
+hold = "HOLD"
 
 [mode_btn]
 HZ = "Hz"
