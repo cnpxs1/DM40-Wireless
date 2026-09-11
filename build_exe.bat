@@ -62,7 +62,9 @@ timeout /t 1 /nobreak >nul
 
 REM --- Ensure Nuitka is installed ---
 echo %STEP%[1/4]%RST% %WHITE%Checking Nuitka installation...%RST%
-"%PY%" -m pip install --upgrade nuitka >nul 2>&1
+REM Run pip in a fresh console: it only draws its progress bar on a real terminal.
+REM Keep that console open on failure so the error stays readable (RC preserves the exit code).
+start "Nuitka install" /wait cmd /v:on /c ""%PY%" -m pip install --upgrade nuitka & set "RC=!errorlevel!" & if !RC! neq 0 pause & exit /b !RC!"
 if errorlevel 1 (
     echo %ERROR% Failed to install Nuitka.
     pause
