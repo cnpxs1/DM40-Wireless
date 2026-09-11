@@ -67,16 +67,15 @@ class _I18n:
         self._initialized = True
 
         # Load English fallback (external → embedded)
-        en_path = self._resolve_path("en-US.toml")
-        if en_path is not None:
-            self._load_fallback(en_path)
+        self._load_fallback()
 
         # Load target language
         lang = language.strip() if language else "en-US"
-        if lang != "en-US" or not self._strings:
-            if not self.load_language(lang):
-                self._strings = dict(self._fallback)
-                lang = "en-US"
+        if lang == "en-US" and self._fallback:
+            self._strings = dict(self._fallback)
+        elif not self.load_language(lang):
+            self._strings = dict(self._fallback)
+            lang = "en-US"
         self._lang = lang
         self.available_languages()
 
@@ -101,8 +100,8 @@ class _I18n:
     def available_languages(self) -> dict[str, str]:
         """Scan ``i18n/`` and return ``{language_code: display_name}``.
 
-        External ``i18n/`` is preferred; if it is missing or empty, the embedded
-        copy inside the exe is used as fallback.
+        External ``i18n/`` is preferred; languages missing from it (e.g. a file the
+        user deleted) are filled in from the embedded copy inside the exe.
         """
         result: dict[str, str] = {}
         # Scan external i18n/ first
@@ -112,14 +111,13 @@ class _I18n:
                 code = path.stem
                 if code:
                     result[code] = self._read_lang_name(path)
-        # If nothing found externally, scan embedded fallback
-        if not result:
-            d2 = _embedded_i18n_dir()
-            if d2.is_dir():
-                for path in sorted(d2.glob("*.toml")):
-                    code = path.stem
-                    if code and code not in result:
-                        result[code] = self._read_lang_name(path)
+        # Fill in languages missing externally from the embedded copy
+        d2 = _embedded_i18n_dir()
+        if d2.is_dir():
+            for path in sorted(d2.glob("*.toml")):
+                code = path.stem
+                if code and code not in result:
+                    result[code] = self._read_lang_name(path)
         self._available = result
         return dict(result)
 
@@ -127,30 +125,30 @@ class _I18n:
         """Load language from ``i18n/{lang}.toml``. Returns True on success.
 
         Does not affect the fallback dict; on failure current strings are unchanged.
-        External ``i18n/`` is preferred; embedded copy inside exe is used as fallback.
+        External ``i18n/`` is preferred; the embedded copy inside the exe is used when
+        the external file is missing, unreadable, or malformed.
         """
-        path = self._resolve_path(f"{lang}.toml")
-        if path is None:
-            return False
-        return self._load_toml(path, lang)
+        for path in self._candidate_paths(f"{lang}.toml"):
+            if self._load_toml(path, lang):
+                return True
+        return False
 
     # ------------------------------------------------------------------
     # Internal
     # ------------------------------------------------------------------
 
     @staticmethod
-    def _resolve_path(filename: str) -> Path | None:
-        """Find a language file: external ``i18n/`` first, then embedded fallback.
+    def _candidate_paths(filename: str) -> list[Path]:
+        """Language file candidates in lookup order: external ``i18n/``, then embedded.
 
-        Returns ``None`` if the file is not found in either location.
+        Both entries coincide when running from source, in which case the path is
+        listed once. Callers must try each candidate until one parses - an external
+        file that exists but is empty, malformed, or non-UTF-8 must not shadow the
+        embedded copy.
         """
         ext = i18n_dir() / filename
-        if ext.is_file():
-            return ext
         emb = _embedded_i18n_dir() / filename
-        if emb.is_file():
-            return emb
-        return None
+        return [ext] if emb == ext else [ext, emb]
 
     @staticmethod
     def _read_lang_name(path: Path) -> str:
@@ -160,7 +158,7 @@ class _I18n:
         """
         try:
             first_line = path.read_text("utf-8").split("\n", 1)[0].strip()
-        except OSError:
+        except (OSError, ValueError):
             return path.stem
         if first_line.startswith("#") and "language name:" in first_line.lower():
             idx = first_line.lower().find("language name:")
@@ -174,7 +172,8 @@ class _I18n:
         """Load and flatten TOML file into self._strings."""
         try:
             raw = tomllib.loads(path.read_text("utf-8"))
-        except (OSError, tomllib.TOMLDecodeError):
+        except (OSError, ValueError):
+            # ValueError covers non-UTF-8 bytes and malformed TOML
             return False
         strings = self._flatten(raw)
         if not strings:
@@ -183,13 +182,18 @@ class _I18n:
         self._strings = strings
         return True
 
-    def _load_fallback(self, path: Path) -> None:
-        """Load English fallback dictionary."""
-        try:
-            raw = tomllib.loads(path.read_text("utf-8"))
-            self._fallback = self._flatten(raw)
-        except (OSError, tomllib.TOMLDecodeError):
-            self._fallback = {}
+    def _load_fallback(self) -> None:
+        """Load the English fallback dictionary from the first readable candidate."""
+        self._fallback = {}
+        for path in self._candidate_paths("en-US.toml"):
+            try:
+                raw = tomllib.loads(path.read_text("utf-8"))
+            except (OSError, ValueError):
+                continue
+            strings = self._flatten(raw)
+            if strings:
+                self._fallback = strings
+                return
 
     @staticmethod
     def _flatten(data: dict, prefix: str = "") -> dict[str, str]:

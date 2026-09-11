@@ -15,7 +15,6 @@ SETUP_ROW_GAP = 4
 SETUP_ROW_FONT = 12
 SETUP_ROW_PAD_LEFT = 10
 SETUP_BTN_COUNT = 2
-SETUP_BTN_LABELS = ("Search", "Connect")
 
 
 def setup_btn_labels() -> tuple[str, str]:

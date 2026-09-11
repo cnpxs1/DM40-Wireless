@@ -77,4 +77,4 @@ state_off = "关"
 [ble]
 console_connecting = "正在查找设备 {mac}..."
 console_connected = "已连接。"
-console_disconnected = "错误/已断开: {error}。正在重连..."
+console_disconnected = "错误/已断开：{error}。正在重连..."

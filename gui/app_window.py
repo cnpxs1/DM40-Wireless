@@ -31,7 +31,11 @@ class DM40App:
 
         # Initialize i18n from language in settings.json
         lang = (self.settings.get("language") or "").strip() or "en-US"
-        get_i18n().init(lang)
+        i18n = get_i18n()
+        i18n.init(lang)
+        if i18n.language and i18n.language != lang:
+            self.settings["language"] = i18n.language
+            save_settings(self.settings)
         self.scale = float(self.settings.get("window_scale", 1.0))
         self.mode_state = ModeState()
         for gid, opts in MODE_CYCLE_GROUPS:

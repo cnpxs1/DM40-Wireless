@@ -35,18 +35,6 @@ def range_screen_title(kind: str) -> str:
     from core.i18n import t, toml_key
     return t(f"range_titles.{toml_key(kind)}")
 
-# Keep RANGE_SCREEN_TITLES as backward-compatible default fallback
-RANGE_SCREEN_TITLES = {
-    "VDC": "Voltage Settings",
-    "VAC": "Voltage Settings",
-    "VDC+AC": "Voltage Settings",
-    "ADC": "Current Settings",
-    "AAC": "Current Settings",
-    "ADC+AC": "Current Settings",
-    "RES": "Resistor Settings",
-    "RES_ONLINE": "Resistor Settings",
-}
-
 FLAG_INFO = {
     0x00: ("VDC", "600mV"),
     0x08: ("VDC", "6V"),
