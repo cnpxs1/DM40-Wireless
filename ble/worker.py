@@ -75,6 +75,10 @@ class BleWorker:
     def _schedule(self, coro) -> None:
         if self._loop and self._client and self._client.is_connected:
             asyncio.run_coroutine_threadsafe(coro, self._loop)
+        else:
+            # The caller already built the coroutine; close it so collecting it
+            # unawaited does not raise a RuntimeWarning.
+            coro.close()
 
     def _run(self) -> None:
         asyncio.run(self._ble_loop())
@@ -141,7 +145,10 @@ class BleWorker:
                                 pass
                     await asyncio.sleep(0.01)
             except Exception as exc:
-                print(t("ble.console_disconnected", error=exc))
+                # str(exc) is empty for some exceptions; keep the class name
+                # so the D-Bus error type survives.
+                print(t("ble.console_disconnected",
+                        error=str(exc) or type(exc).__name__))
                 self._client = None
                 self._ble_lock = None
                 if exception_indicates_bt_off(exc):
