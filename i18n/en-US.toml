@@ -76,5 +76,5 @@ state_off = "OFF"
 # Console log
 [ble]
 console_connecting = "Looking for device {mac}..."
-console_connected = "Connected."
-console_disconnected = "Error/Disconnected: {error}. Reconnecting..."
+console_connected = "Connected"
+console_disconnected = "Error/Disconnected: {error} Reconnecting..."

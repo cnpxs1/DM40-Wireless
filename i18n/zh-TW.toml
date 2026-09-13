@@ -76,5 +76,5 @@ state_off = "關"
 # 控制台日誌
 [ble]
 console_connecting = "正在查找裝置 {mac}..."
-console_connected = "已連線。"
-console_disconnected = "錯誤/已斷線：{error}。正在重連..."
+console_connected = "已連線"
+console_disconnected = "錯誤/已斷線：{error} 正在重連..."

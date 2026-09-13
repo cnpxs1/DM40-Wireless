@@ -76,5 +76,5 @@ state_off = "VYP"
 # Protokol konzole
 [ble]
 console_connecting = "Hledám zařízení {mac}..."
-console_connected = "Připojeno."
-console_disconnected = "Chyba/Odpojeno: {error}. Připojuji znovu..."
+console_connected = "Připojeno"
+console_disconnected = "Chyba/Odpojeno: {error} Připojuji znovu..."

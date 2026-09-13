@@ -76,5 +76,5 @@ state_off = "AUS"
 # Konsolenprotokoll
 [ble]
 console_connecting = "Suche Gerät {mac}..."
-console_connected = "Verbunden."
-console_disconnected = "Fehler/Getrennt: {error}. Verbinde erneut..."
+console_connected = "Verbunden"
+console_disconnected = "Fehler/Getrennt: {error} Verbinde erneut..."
