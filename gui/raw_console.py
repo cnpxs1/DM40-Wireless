@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import tkinter as tk
+from tkinter import ttk
 
 from gui import layout as L
 from gui.theme import rgb_hex
@@ -48,21 +49,41 @@ class RawConsole(tk.Frame):
             widget.bind("<Button-4>", self._on_wheel, add=True)
             widget.bind("<Button-5>", self._on_wheel, add=True)
 
-    def _create_scrollbar(self, master: tk.Misc) -> tk.Scrollbar:
-        """Classic tk scrollbar – respects colors on Windows (ttk uses OS theme)."""
-        return tk.Scrollbar(
-            master,
-            orient="vertical",
-            width=max(10, int(11 * self.scale)),
-            bg=rgb_hex("buttons"),
-            troughcolor=rgb_hex("top_bar_background"),
-            activebackground=rgb_hex("graph_grid"),
-            highlightthickness=0,
-            borderwidth=0,
-            relief="flat",
-        )
+    def _create_scrollbar(self, master: tk.Misc) -> ttk.Scrollbar:
+        """ttk scrollbar coloured through the 'clam' theme.
 
-    def _on_yview(self, first: str, last: str) -> None:
+        The classic tk.Scrollbar cannot be coloured cross-platform: Windows
+        draws it with the native theme engine, which discards bg/troughcolor,
+        so the same options came out flat on X11 and system-styled on Windows.
+        clam is the built-in theme that honours them on both. Width follows
+        arrowsize - clam sizes the trough from its arrow elements.
+        """
+        style = ttk.Style(master)
+        style.theme_use("clam")
+        trough = rgb_hex("top_bar_background")
+        thumb = rgb_hex("buttons")
+        hover = rgb_hex("graph_grid")
+        style.configure(
+            "Vertical.TScrollbar",
+            background=thumb,
+            troughcolor=trough,
+            bordercolor=trough,
+            lightcolor=thumb,   # same as the thumb -> flat, no 3D bevel
+            darkcolor=thumb,
+            arrowcolor=rgb_hex("text_secondary"),
+            arrowsize=max(10, int(11 * self.scale)),   # clam sizes the trough from this
+        )
+        style.map(
+            "Vertical.TScrollbar",
+            background=[("active", hover)],
+            lightcolor=[("active", hover)],
+            darkcolor=[("active", hover)],
+        )
+        return ttk.Scrollbar(master, orient="vertical", style="Vertical.TScrollbar")
+
+    def _on_yview(self, first: str | float, last: str | float) -> None:
+        # Tk hands the two fractions over as strings ("0.0", "1.0"); the float
+        # in the annotation only satisfies the typeshed stub for yscrollcommand.
         self._scrollbar.set(first, last)
         self._autoscroll = float(last) >= 0.99
 
