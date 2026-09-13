@@ -3,6 +3,8 @@
 from __future__ import annotations
 
 import os
+import subprocess
+import sys
 import tkinter as tk
 
 from core.config import SCREEN_HEIGHT, SCREEN_WIDTH
@@ -14,6 +16,24 @@ from gui.settings import save_settings
 from gui.sprites import SpriteCache
 from gui.fonts import gui_font
 from gui.theme import rgb_hex
+
+
+def _reveal_in_file_manager(path: str) -> None:
+    """Open a folder in the platform's file manager. Never raises.
+
+    The caller arms a focus hook right after this returns, so a missing
+    xdg-open must not abort it - the language list would stop refreshing.
+    """
+    try:
+        if sys.platform == "win32":
+            os.startfile(path)
+        else:
+            subprocess.Popen(
+                ["xdg-open", path],
+                stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL,
+            )
+    except OSError:
+        pass
 
 
 class SettingsScreen(tk.Frame):
@@ -164,11 +184,11 @@ class SettingsScreen(tk.Frame):
             self._lang_popup_dismiss_bind = None
 
     def _open_i18n_folder(self) -> None:
-        """Open i18n/ in Explorer; refresh language list when app regains focus."""
+        """Open i18n/ in the file manager; refresh language list on refocus."""
         self._close_lang_popup()
         folder = i18n_dir()
         folder.mkdir(parents=True, exist_ok=True)
-        os.startfile(str(folder))
+        _reveal_in_file_manager(str(folder))
         self._unbind_folder_focus()
 
         def on_focus(_event=None) -> None:
