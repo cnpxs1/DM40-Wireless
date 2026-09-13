@@ -18,6 +18,9 @@ from gui.fonts import gui_font
 from gui.theme import rgb_hex
 
 
+_HIT_GROUP = "settings_hits"   # lets rebuild() drop every hit area at once
+
+
 def _reveal_in_file_manager(path: str) -> None:
     """Open a folder in the platform's file manager. Never raises.
 
@@ -100,6 +103,7 @@ class SettingsScreen(tk.Frame):
         if self._title_id is not None:
             self.canvas.itemconfig(self._title_id, text=t("settings.title"))
         self.canvas.delete("settings_row")
+        self.canvas.delete(_HIT_GROUP)
         label_font = gui_font(self.app.settings, self._s(SL.SETTINGS_LABEL_FONT), "normal")
         state_font = gui_font(self.app.settings, self._s(SL.SETTINGS_STATE_FONT), "normal")
 
@@ -163,7 +167,7 @@ class SettingsScreen(tk.Frame):
         )
         bind_clickable(
             self.canvas, rx, ry, rw, rh,
-            lambda k=key: self._toggle(k), tag=f"settings_hit_{key}",
+            lambda k=key: self._toggle(k), tag=f"settings_hit_{key}", group=_HIT_GROUP,
         )
 
     def _toggle(self, key: str) -> None:
@@ -263,8 +267,24 @@ class SettingsScreen(tk.Frame):
             def on_pick(_event=None, code=lang_code):
                 self._select_language(code)
 
+            def paint(hex_color: str, r=row, l=lbl) -> None:
+                r.configure(bg=hex_color)
+                l.configure(bg=hex_color)
+
+            # Every default here captures the current pass: paint is rebound on
+            # each iteration, so a free reference would make any row repaint the
+            # last one instead of itself.
+            def on_enter(_event=None, active=active, hover=rgb_hex("buttons_hover"), paint=paint):
+                if not active:          # the selected row keeps its blue
+                    paint(hover)
+
+            def on_leave(_event=None, restore=bg, paint=paint):
+                paint(restore)
+
             for widget in (row, lbl):
                 widget.bind("<Button-1>", on_pick)
+                widget.bind("<Enter>", on_enter)
+                widget.bind("<Leave>", on_leave)
 
         self._lang_popup = popup
 
@@ -324,7 +344,7 @@ class SettingsScreen(tk.Frame):
                 folder_x, folder_y,
                 folder_icon.width(), folder_icon.height(),
                 self._open_i18n_folder,
-                tag=f"settings_folder_hit_{key}",
+                tag=f"settings_folder_hit_{key}", group=_HIT_GROUP,
             )
             selector_right = folder_x - folder_pad
         else:
@@ -354,5 +374,5 @@ class SettingsScreen(tk.Frame):
             self.canvas,
             selector_left, selector_top, selector_w, selector_h,
             lambda: self._toggle_lang_popup(selector_left, selector_top, selector_w, selector_h),
-            tag=f"settings_selector_hit_{key}",
+            tag=f"settings_selector_hit_{key}", group=_HIT_GROUP,
         )

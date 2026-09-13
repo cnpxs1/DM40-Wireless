@@ -15,7 +15,7 @@ from core.save_units import save_unit_sprite_filename
 from core.modes import MODE_CYCLE_GROUPS
 from core.parsing import MODEL
 from gui import layout as L
-from gui.assets import CLICK_HOTSPOT_TAG, bind_clickable, raise_click_hotspots
+from gui.assets import CLICK_HOTSPOT_TAG, HoverGroup, bind_clickable, raise_click_hotspots
 from gui.display_debug import clear_display_debug, draw_debug_rect
 from gui.sprites import SpriteCache, main_unit_filename
 from gui.fonts import gui_font
@@ -39,6 +39,8 @@ class MainScreen(tk.Frame):
         self._text_ids: dict[str, int] = {}
         self._sprite_ids: dict[str, int] = {}
         self._mode_btn_ids: list[str] = []
+        self._mode_bg_ids: dict[str, int] = {}
+        self._mode_hover = HoverGroup(self.canvas, self._on_mode_hover_change)
         self._last_range_label = ""
         self._last_hold: bool | None = None
         self._hold_expected: bool | None = None
@@ -530,15 +532,44 @@ class MainScreen(tk.Frame):
     def _draw_mode_buttons(self) -> None:
         self._mode_btn_ids = [gid for gid, _ in MODE_CYCLE_GROUPS]
 
-    def _place_mode_button_bg(self, gid: str, rx: int, ry: int, rw: int, rh: int, active: bool) -> None:
-        color = "buttons_active" if active else "buttons"
-        radius = self._s(L.MODE_BTN_RADIUS)
-        photo = self.sprites.rounded_button(color, rw, rh, radius)
+    def _mode_bg_color(self, gid: str, active: bool, hovered: bool) -> str:
+        """Blue wins over hover - the selected mode has to stay readable."""
+        if active:
+            return "buttons_active"
+        return "buttons_hover" if hovered else "buttons"
+
+    def _place_mode_button_bg(self, gid: str, rx: int, ry: int, rw: int, rh: int, active: bool) -> int | None:
+        photo = self.sprites.rounded_button(
+            self._mode_bg_color(gid, active, False), rw, rh, self._s(L.MODE_BTN_RADIUS),
+        )
+        if not photo:
+            return None
+        return self.canvas.create_image(
+            rx, ry, anchor="nw", image=photo,
+            tags=("mode_btn", f"mode_bg_{gid}"),
+        )
+
+    def _on_mode_hover_change(self, previous: str | None, current: str | None) -> None:
+        self._repaint_mode_bg(previous)
+        self._repaint_mode_bg(current)
+
+    def _repaint_mode_bg(self, gid: str | None) -> None:
+        """Swap one MODE button between idle / hover / selected backgrounds."""
+        if gid is None:
+            return
+        item = self._mode_bg_ids.get(gid)
+        box = self._mode_hover.box(gid)
+        if item is None or box is None:
+            return
+        _rx, _ry, rw, rh = box
+        photo = self.sprites.rounded_button(
+            self._mode_bg_color(
+                gid, self.app.mode_state.active_group == gid, self._mode_hover.is_hovered(gid),
+            ),
+            rw, rh, self._s(L.MODE_BTN_RADIUS),
+        )
         if photo:
-            self.canvas.create_image(
-                rx, ry, anchor="nw", image=photo,
-                tags=("mode_btn", f"mode_bg_{gid}"),
-            )
+            self.canvas.itemconfig(item, image=photo)
 
     def apply_view_mode(self, *, mini: bool, resize: bool = True) -> None:
         self._mini_mode = mini
@@ -566,9 +597,12 @@ class MainScreen(tk.Frame):
         active = mode_state.active_group
         slots = L.mode_button_slots(mini=self._mini_mode)
         self.canvas.delete("mode_btn")
+        self._mode_bg_ids.clear()
         for (gid, _opts), (x, y, w, h) in zip(MODE_CYCLE_GROUPS, slots):
             rx, ry, rw, rh = self._s(x), self._s(y), self._s(w), self._s(h)
-            self._place_mode_button_bg(gid, rx, ry, rw, rh, gid == active)
+            item = self._place_mode_button_bg(gid, rx, ry, rw, rh, gid == active)
+            if item is not None:
+                self._mode_bg_ids[gid] = item
             cmd_key = mode_state.current_cmd_key(gid)
             photo = self.sprites.mode_button(cmd_key, s, max_w=rw - 4, max_h=rh - 4)
             if photo:
@@ -581,6 +615,7 @@ class MainScreen(tk.Frame):
                 # so the mode is still visible; falls back per language (btn_label).
                 self._place_mode_button_text(gid, cmd_key, rx, ry, rw, rh)
         self._rebind_mode_hotspots(slots)
+        self._mode_hover.restore()
         self.raise_click_layer()
 
     def _place_mode_button_text(
@@ -624,13 +659,17 @@ class MainScreen(tk.Frame):
         dbg = self._debug_hotspots
         for gid, _ in MODE_CYCLE_GROUPS:
             self.canvas.delete(f"mode_hit_{gid}")
+        self._mode_hover.clear()
         for (gid, _opts), (x, y, w, h) in zip(MODE_CYCLE_GROUPS, slots):
+            rx, ry, rw, rh = self._s(x), self._s(y), self._s(w), self._s(h)
+            hit_tag = f"mode_hit_{gid}"
             bind_clickable(
-                self.canvas, self._s(x), self._s(y), self._s(w), self._s(h),
+                self.canvas, rx, ry, rw, rh,
                 lambda g=gid: self.app.cycle_mode(g),
-                tag=f"mode_hit_{gid}",
+                tag=hit_tag,
                 debug=dbg, debug_color="#208040",
             )
+            self._mode_hover.add(gid, (rx, ry, rw, rh), hit_tag)
 
     def _bind_hotspots(self) -> None:
         dbg = self._debug_hotspots

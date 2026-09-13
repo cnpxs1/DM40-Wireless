@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import tkinter as tk
+from dataclasses import dataclass
 
 from core.config import SCREEN_HEIGHT, SCREEN_WIDTH
 from core.controller import COMMANDS
@@ -13,10 +14,21 @@ from core.protocol_constants import range_screen_title
 from core.ranges import RANGE_CAPABLE_KINDS, kind_from_mode_cmd_key, ranges_for_kind
 from gui import layout as L
 from gui import range_layout as RL
-from gui.assets import bind_clickable, raise_click_hotspots
+from gui.assets import HoverGroup, bind_clickable, raise_click_hotspots
 from gui.sprites import SpriteCache
 from gui.fonts import gui_font
 from gui.theme import rgb_hex
+
+
+_HIT_GROUP = "range_hits"   # lets rebuild_for_kind drop every hit area at once
+
+
+@dataclass
+class _RangeBg:
+    """A row background rectangle plus how hover may repaint it."""
+    item: int
+    base: str
+    hoverable: bool
 
 
 class RangeScreen(tk.Frame):
@@ -35,6 +47,8 @@ class RangeScreen(tk.Frame):
         self._active_flag = 0
         self._title_id: int | None = None
         self._back_sprite_id: int | None = None
+        self._range_bgs: dict[str, _RangeBg] = {}
+        self._range_hover = HoverGroup(self.canvas, self._on_range_hover_change)
 
         self._draw_top_bar()
         self._bind_back()
@@ -80,6 +94,9 @@ class RangeScreen(tk.Frame):
         self._active_flag = active_flag
         self.canvas.delete("range_btn")
         self.canvas.delete("range_subtype")
+        self.canvas.delete(_HIT_GROUP)
+        self._range_bgs.clear()
+        self._range_hover.clear()
 
         if not kind or kind not in RANGE_CAPABLE_KINDS:
             if self._title_id is not None:
@@ -111,15 +128,19 @@ class RangeScreen(tk.Frame):
                 self._place_subtype_button(x, y, w, h, text, cmd_key, active, font)
 
         self.raise_click_layer()
+        self._range_hover.restore()
 
     def _place_range_button(
         self, x: int, y: int, w: int, h: int, label: str, flag: int, active: bool, font: tuple,
     ) -> None:
         rx, ry, rw, rh = self._s(x), self._s(y), self._s(w), self._s(h)
-        self.canvas.create_rectangle(
+        bg_item = self.canvas.create_rectangle(
             rx, ry, rx + rw, ry + rh,
             fill=rgb_hex("range_buttons"), outline="", tags=("range_btn", f"range_bg_{flag}"),
         )
+        # A selected range is signalled by icon and text colour, not by the
+        # background, so the active row stays hoverable like the others.
+        self._range_bgs[f"range_{flag}"] = _RangeBg(bg_item, "range_buttons", True)
         icon_name = "btnsel1.png" if active else "btnsel0.png"
         icon = self.sprites.range_menu_sprite(
             icon_name, self.scale, max_h=self._s(RL.RANGE_SEL_ICON_MAX_H),
@@ -140,29 +161,52 @@ class RangeScreen(tk.Frame):
                 rx + pad_l, cy, text=label, fill=text_color, anchor="w", font=font,
                 tags=("range_btn", f"range_txt_{flag}"),
             )
+        hit_tag = f"range_hit_{flag}"
         bind_clickable(
             self.canvas, rx, ry, rw, rh,
-            lambda f=flag: self._pick(f), tag=f"range_hit_{flag}",
+            lambda f=flag: self._pick(f), tag=hit_tag, group=_HIT_GROUP,
         )
+        self._range_hover.add(f"range_{flag}", (rx, ry, rw, rh), hit_tag)
 
     def _place_subtype_button(
         self, x: int, y: int, w: int, h: int, text: str, cmd_key: str, active: bool, font: tuple,
     ) -> None:
         rx, ry, rw, rh = self._s(x), self._s(y), self._s(w), self._s(h)
         bg = "buttons_active" if active else "range_buttons"
-        self.canvas.create_rectangle(
+        bg_item = self.canvas.create_rectangle(
             rx, ry, rx + rw, ry + rh,
             fill=rgb_hex(bg), outline="", tags=("range_subtype", f"subtype_bg_{cmd_key}"),
         )
+        # Here the background itself means "selected", so hover must not take it.
+        self._range_bgs[f"subtype_{cmd_key}"] = _RangeBg(bg_item, bg, not active)
         self.canvas.create_text(
             rx + rw // 2, ry + rh // 2, text=text,
             fill=rgb_hex("text_primary"), anchor="center", font=font,
             tags=("range_subtype", f"subtype_txt_{cmd_key}"),
         )
+        hit_tag = f"subtype_hit_{cmd_key}"
         bind_clickable(
             self.canvas, rx, ry, rw, rh,
-            lambda k=cmd_key: self._pick_subtype(k), tag=f"subtype_hit_{cmd_key}",
+            lambda k=cmd_key: self._pick_subtype(k), tag=hit_tag, group=_HIT_GROUP,
         )
+        self._range_hover.add(f"subtype_{cmd_key}", (rx, ry, rw, rh), hit_tag)
+
+    def _on_range_hover_change(self, previous: str | None, current: str | None) -> None:
+        self._repaint_range_bg(previous)
+        self._repaint_range_bg(current)
+
+    def _range_bg_color(self, key: str) -> str:
+        bg = self._range_bgs[key]
+        if bg.hoverable and self._range_hover.is_hovered(key):
+            return "buttons_hover"
+        return bg.base
+
+    def _repaint_range_bg(self, key: str | None) -> None:
+        if key is None:
+            return
+        bg = self._range_bgs.get(key)
+        if bg is not None:
+            self.canvas.itemconfig(bg.item, fill=rgb_hex(self._range_bg_color(key)))
 
     def _pick(self, flag: int) -> None:
         self.app.ble.send_range_flag(flag)

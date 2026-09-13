@@ -5,6 +5,7 @@ RGB_COLORS = {
     "orange_main": (255, 141, 26),
     "orange_hv_warn": (235, 87, 101),
     "buttons": (41, 44, 49),
+    "buttons_hover": (60, 64, 73),
     "range_buttons": (24, 32, 33),
     "buttons_active": (0, 130, 206),
     "top_bar_background": (24, 32, 33),
