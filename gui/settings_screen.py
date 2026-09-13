@@ -33,6 +33,7 @@ class SettingsScreen(tk.Frame):
         self._back_sprite_id: int | None = None
         self._lang_popup: tk.Toplevel | None = None
         self._lang_popup_dismiss_bind: str | None = None
+        self._folder_focus_bind: str | None = None
 
         self._draw_top_bar()
         self._bind_back()
@@ -168,12 +169,23 @@ class SettingsScreen(tk.Frame):
         folder = i18n_dir()
         folder.mkdir(parents=True, exist_ok=True)
         os.startfile(str(folder))
+        self._unbind_folder_focus()
 
         def on_focus(_event=None) -> None:
+            self._unbind_folder_focus()
             self.rebuild()
-            self.app.root.unbind("<FocusIn>")
 
-        self.app.root.bind("<FocusIn>", on_focus, add="+")
+        self._folder_focus_bind = self.app.root.bind("<FocusIn>", on_focus, add="+")
+
+    def _unbind_folder_focus(self) -> None:
+        """Drop the pending "app regained focus" hook, if one is armed.
+
+        Unbinds by funcid: a bare ``unbind("<FocusIn>")`` would also remove the
+        title-bar handler registered in :mod:`gui.win_titlebar`.
+        """
+        if self._folder_focus_bind:
+            self.app.root.unbind("<FocusIn>", self._folder_focus_bind)
+            self._folder_focus_bind = None
 
     def _select_language(self, lang_code: str) -> None:
         current = (self.app.settings.get("language") or "").strip() or "en-US"
