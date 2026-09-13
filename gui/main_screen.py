@@ -16,6 +16,7 @@ from core.modes import MODE_CYCLE_GROUPS
 from core.parsing import MODEL
 from gui import layout as L
 from gui.assets import CLICK_HOTSPOT_TAG, HoverGroup, bind_clickable, raise_click_hotspots
+from gui.confirm_dialog import ask_confirm
 from gui.display_debug import clear_display_debug, draw_debug_rect
 from gui.sprites import SpriteCache, main_unit_filename
 from gui.fonts import gui_font
@@ -400,6 +401,24 @@ class MainScreen(tk.Frame):
             self._hide_sprite("bt")
         self.raise_click_layer()
 
+    def _on_bt_click(self) -> None:
+        """Offer to drop the link.
+
+        The icon only shows while connected, but the hit area is permanent, so
+        the state check is what actually gates this.
+        """
+        if self._ble_state != "connected":
+            return
+        if ask_confirm(
+            self.app.root, self.sprites, self.app.settings,
+            title=t("main.disconnect_title"),
+            message=t("main.disconnect_ask"),
+            yes_text=t("main.disconnect_yes"),
+            no_text=t("main.disconnect_no"),
+            scale=self.scale,
+        ):
+            self.app.disconnect_device()
+
     def _clear_unit_sprites(self) -> None:
         self._hide_sprite("main_unit")
 
@@ -690,6 +709,12 @@ class MainScreen(tk.Frame):
             self.canvas, self._s(sx), self._s(sy), self._s(sw), self._s(sh),
             self.app.show_settings_screen, tag="hit_settings",
             debug=dbg, debug_color="#8060c0",
+        )
+        bx, by, bw, bh = L.BT_HIT
+        bind_clickable(
+            self.canvas, self._s(bx), self._s(by), self._s(bw), self._s(bh),
+            self._on_bt_click, tag="hit_bt",
+            debug=dbg, debug_color="#20a080",
         )
 
         self._rebind_mode_hotspots(L.mode_button_slots(mini=self._mini_mode))

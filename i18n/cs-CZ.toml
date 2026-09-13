@@ -22,6 +22,10 @@ btn_connect = "Připojit"
 # Hlavní obrazovka
 [main]
 bt_off = "Zapněte Bluetooth"
+disconnect_title = "Odpojit Bluetooth"
+disconnect_ask = "Odpojit od DM40?"
+disconnect_yes = "Odpojit"
+disconnect_no = "Zrušit"
 run = "RUN"
 hold = "HOLD"
 

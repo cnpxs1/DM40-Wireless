@@ -22,6 +22,10 @@ btn_connect = "Connect"
 # Main screen
 [main]
 bt_off = "Turn ON Bluetooth"
+disconnect_title = "Disconnect Bluetooth"
+disconnect_ask = "Disconnect from the DM40?"
+disconnect_yes = "Disconnect"
+disconnect_no = "Cancel"
 run = "RUN"
 hold = "HOLD"
 

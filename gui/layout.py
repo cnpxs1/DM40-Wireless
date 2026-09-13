@@ -57,6 +57,16 @@ SETTINGS_HIT = (
     _TOP_HIT_H,
 )
 
+# BLE icon – tapping it offers to drop the link. Pad stays well inside the
+# 18 px gap to the neighbouring icons.
+_BT_HIT_PAD = 4
+BT_HIT = (
+    TOP_BAR_BT_X - _BT_HIT_PAD,
+    _TOP_HIT_Y,
+    TOP_BAR_BT_W + 2 * _BT_HIT_PAD,
+    _TOP_HIT_H,
+)
+
 SETTINGS_IMG = (TOP_BAR_SETTINGS_X, TOP_BAR_ICON_Y)
 LOCK_IMG = (TOP_BAR_LOCK_X, TOP_BAR_ICON_Y)
 BT_IMG = (TOP_BAR_BT_X, TOP_BAR_ICON_Y)

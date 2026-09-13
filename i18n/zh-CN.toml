@@ -22,6 +22,10 @@ btn_connect = "连接"
 # 主界面
 [main]
 bt_off = "请开启蓝牙"
+disconnect_title = "断开蓝牙"
+disconnect_ask = "要断开与 DM40 的连接吗？"
+disconnect_yes = "断开"
+disconnect_no = "取消"
 run = "RUN"
 hold = "HOLD"
 

@@ -22,6 +22,10 @@ btn_connect = "Verbinden"
 # Hauptansicht
 [main]
 bt_off = "Bluetooth einschalten"
+disconnect_title = "Bluetooth trennen"
+disconnect_ask = "Verbindung zum DM40 trennen?"
+disconnect_yes = "Trennen"
+disconnect_no = "Abbrechen"
 run = "RUN"
 hold = "HOLD"
 

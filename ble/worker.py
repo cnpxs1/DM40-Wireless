@@ -47,6 +47,7 @@ class BleWorker:
         self._loop = None
         self._poll_ready: asyncio.Event | None = None
         self._ble_lock: asyncio.Lock | None = None
+        self._paused = False
         self._thread = threading.Thread(target=self._run, daemon=True)
 
     @property
@@ -71,6 +72,33 @@ class BleWorker:
 
     def send_range_flag(self, flag: int) -> None:
         self.send_packet(make_range_cmd(flag))
+
+    def disconnect(self, *, wait: float = 0.0) -> None:
+        """Drop the link now and stay down until resume().
+
+        _ble_loop would otherwise reconnect straight away. ``wait`` > 0 blocks
+        the caller until the disconnect completes - used on exit, so the link
+        is really gone before the process ends and the meter stops waiting.
+        """
+        self._paused = True
+        client, loop = self._client, self._loop
+        if client is None or loop is None or not client.is_connected:
+            return
+        # Wake the poll wait so the loop sees _paused right away instead of
+        # sitting out the rest of its response timeout.
+        ready = self._poll_ready
+        if ready is not None:
+            loop.call_soon_threadsafe(ready.set)
+        future = asyncio.run_coroutine_threadsafe(client.disconnect(), loop)
+        if wait > 0:
+            try:
+                future.result(timeout=wait)
+            except Exception:
+                pass
+
+    def resume(self) -> None:
+        """Let _ble_loop connect again - called once a device has been picked."""
+        self._paused = False
 
     def _schedule(self, coro) -> None:
         if self._loop and self._client and self._client.is_connected:
@@ -103,6 +131,9 @@ class BleWorker:
 
     async def _ble_loop(self) -> None:
         while True:
+            if self._paused:
+                await asyncio.sleep(0.5)
+                continue
             if not (self._target_mac or "").strip():
                 await asyncio.sleep(0.5)
                 continue
@@ -131,7 +162,7 @@ class BleWorker:
                     await self._write_gatt(CMD_ID)
                     self._callbacks.on_connected()
 
-                    while client.is_connected:
+                    while client.is_connected and not self._paused:
                         async with self._ble_lock:
                             self._poll_ready.clear()
                             self._emit_raw("TX", CMD_POLL)

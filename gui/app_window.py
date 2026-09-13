@@ -116,11 +116,30 @@ class DM40App:
         self.settings["device_counts"] = device.device_counts
         save_settings(self.settings)
         self.ble.set_target_mac(device.address)
+        self.ble.resume()          # a previous disconnect left the loop paused
         if not self._ble_started:
             self.ble.start()
             self._ble_started = True
         self.connect_screen.on_hide()
         self.show_main_screen()
+
+    def disconnect_device(self) -> None:
+        """Drop the BLE link and go back to the connect screen.
+
+        settings.json is deliberately left alone: target_mac / model_name stay
+        put, so reconnecting the same meter needs no re-selection. They are
+        only rewritten when a device is picked in complete_device_setup().
+        """
+        self.ble.disconnect()
+        self.show_connect_screen(auto_scan=True)
+
+    def on_close(self) -> None:
+        """Hand the link back before the process goes away.
+
+        Without this the meter keeps waiting for a host that is already gone.
+        """
+        self.ble.disconnect(wait=2.0)
+        self.root.destroy()
 
     def reload_language(self, lang_code: str) -> None:
         """Switch language, refresh all screens, and update settings.json."""
@@ -382,5 +401,6 @@ class DM40App:
 
 def run_app() -> None:
     root = tk.Tk()
-    DM40App(root)
+    app = DM40App(root)
+    root.protocol("WM_DELETE_WINDOW", app.on_close)
     root.mainloop()
