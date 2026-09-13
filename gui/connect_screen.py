@@ -67,9 +67,12 @@ class ConnectScreen(tk.Frame):
             fill=rgb_hex("text_secondary"), anchor="center", font=hint_font, tags="connect_chrome",
         )
         status_font = gui_font(self.app.settings, self._s(CL.SETUP_STATUS_FONT), "normal")
+        # width= makes Tk wrap overlong messages instead of clipping them
         self._status_id = self.canvas.create_text(
             self._s(L.SCREEN_W // 2), self._s(CL.SETUP_STATUS_Y), text="",
-            fill=rgb_hex("text_primary"), anchor="center", font=status_font, tags="connect_chrome",
+            fill=rgb_hex("text_primary"), anchor="center", font=status_font,
+            width=self._s(CL.SETUP_STATUS_MAX_W),
+            tags="connect_chrome",
         )
         self._set_status(t("setup.status_initial"))
         self._place_settings_icon()
