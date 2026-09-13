@@ -1,7 +1,9 @@
 """MODE button logic (rotation, group memory)."""
 
 import json
-from .config import UI_STATE_PATH
+import time
+
+from .config import NOTIFY_CONFIRM_WINDOW_S, UI_STATE_PATH
 from .controller import COMMANDS, create_command
 from .ranges import kind_from_mode_cmd_key
 
@@ -29,6 +31,12 @@ KIND_TO_CMD = {
     "FREQ": "HZ",
     "TEMP": "TEMP",
 }
+
+# Inverse of KIND_TO_CMD: a command key traced back to its measurement kind.
+# Spelled out separately from core.ranges.kind_from_mode_cmd_key(), which
+# covers only the range-capable modes - MODE buttons cover all of them
+# (CAP / DIODE / CONT / HZ / TEMP included).
+CMD_TO_KIND = {cmd: kind for kind, cmd in KIND_TO_CMD.items()}
 
 # MODE button text-fallback whitelist (see btn_label). Values are unused –
 # the actual label always comes from ``mode_btn.*`` in the i18n TOML files.
@@ -63,6 +71,8 @@ class ModeState:
         self.groups: dict[str, dict] = {}
         self.active_group: str | None = None
         self.last_kind: str | None = None
+        self._pending_cmd_key: str | None = None
+        self._pending_until: float = 0.0
 
     def register_group(self, group_id: str, options: tuple[str, ...]) -> None:
         self.groups[group_id] = {"options": options, "index": 0}
@@ -104,13 +114,46 @@ class ModeState:
         if self.active_group == group_id and len(options) > 1:
             group["index"] = (group["index"] + 1) % len(options)
         self.active_group = group_id
+        cmd_key = group["options"][group["index"]]
+        self.expect_cmd(cmd_key)
+        # Optimistic: last_kind is what get_active_kind() reads first, and
+        # _pick_subtype already advances it on a local switch - stay in step.
+        kind = CMD_TO_KIND.get(cmd_key)
+        if kind:
+            self.last_kind = kind
         self.save()
-        return create_command(COMMANDS[group["options"][group["index"]]])
+        return create_command(COMMANDS[cmd_key])
+
+    def expect_cmd(self, cmd_key: str) -> None:
+        """Declare the mode a locally issued command is switching to.
+
+        Arms the confirmation window for ``NOTIFY_CONFIRM_WINDOW_S``.
+        Notifications reporting any *other* mode until then are the device
+        echoing the pre-switch mode, and ``sync_from_kind`` drops them.
+        """
+        self._pending_cmd_key = cmd_key
+        self._pending_until = time.monotonic() + NOTIFY_CONFIRM_WINDOW_S
+
+    def _is_stale(self, cmd_key: str) -> bool:
+        """True while a notification is just an echo of the pre-switch mode.
+
+        Notifications matching the expected mode pass through without clearing
+        the window, so it keeps filtering for its full duration.
+        """
+        if self._pending_cmd_key is None:
+            return False
+        if time.monotonic() >= self._pending_until:
+            # Device never confirmed. Stop guarding, trust it from here on.
+            self._pending_cmd_key = None
+            return False
+        return cmd_key != self._pending_cmd_key
 
     def sync_from_kind(self, kind: str) -> bool:
         """Sync MODE state from measurement kind; True = buttons need redraw."""
         cmd_key = KIND_TO_CMD.get(kind)
         if not cmd_key:
+            return False
+        if self._is_stale(cmd_key):
             return False
         for group_id, group in self.groups.items():
             if cmd_key in group["options"]:
@@ -122,3 +165,16 @@ class ModeState:
                     self.save()
                 return changed
         return False
+
+    def apply_notify(self, kind: str) -> bool:
+        """Feed the device-reported mode from a BLE notification. True = redraw.
+
+        A stale echo is dropped whole - neither ``last_kind`` nor the active
+        group move - so the UI never renders the pre-switch mode, not even for
+        the few hundred ms until the device catches up.
+        """
+        cmd_key = KIND_TO_CMD.get(kind)
+        if cmd_key and self._is_stale(cmd_key):
+            return False
+        self.last_kind = kind
+        return self.sync_from_kind(kind)

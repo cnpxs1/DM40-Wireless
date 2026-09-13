@@ -1,9 +1,10 @@
 """Main multimeter screen – sprite GUI without full-screen PNG background."""
 
+import time
 import tkinter as tk
 
 from core.aux_display import AuxPanel, build_aux_panels
-from core.config import SCREEN_HEIGHT, SCREEN_WIDTH
+from core.config import NOTIFY_CONFIRM_WINDOW_S, SCREEN_HEIGHT, SCREEN_WIDTH
 from core.i18n import t
 from core.controller import COMMANDS
 from gui.graph_panel import GraphPanel
@@ -40,12 +41,13 @@ class MainScreen(tk.Frame):
         self._mode_btn_ids: list[str] = []
         self._last_range_label = ""
         self._last_hold: bool | None = None
+        self._hold_expected: bool | None = None
+        self._hold_until: float = 0.0
         self._ble_state = "disconnected"
         self._ble_pulse_on = True
         self._ble_pulse_after_id: str | None = None
         self._bt_off_display = False
         self._hv_warning_active = False
-        self._display_frozen = False
         self._last_display_measurement: tuple | None = None
         self._save_slots = SaveSlotManager()
         self._long_press_after: str | None = None
@@ -299,6 +301,22 @@ class MainScreen(tk.Frame):
         self._last_hold = hold
         self._hide_sprite("hold_run")
         self._set_canvas_text("hold_text", t("main.hold") if hold else t("main.run"))
+
+    def _is_stale_hold(self, reported: bool) -> bool:
+        """True while a notification still echoes the pre-toggle HOLD state.
+
+        Tapping RUN/HOLD flips the label at once, but the device answers the
+        command before it has switched, so the first notifications report the
+        old state. Applying one would flip the label back for a frame and let
+        the reading start moving again.
+        """
+        if self._hold_expected is None:
+            return False
+        if time.monotonic() >= self._hold_until:
+            # Device never confirmed. Stop guarding, trust it from here on.
+            self._hold_expected = None
+            return False
+        return reported != self._hold_expected
 
     def _set_settings_display(self) -> None:
         photo = self._top_bar_icon("settings.png", L.TOP_BAR_SETTINGS_W)
@@ -731,10 +749,6 @@ class MainScreen(tk.Frame):
         self._set_hold_display(bool(self._last_hold), force=True)
         self.raise_click_layer()
 
-    def release_hold_freeze(self) -> None:
-        """Release display freeze (e.g. after MODE → RUN on the device)."""
-        self._display_frozen = False
-
     def _render_measurement(self, m, rng_label: str) -> None:
         """Render measurement on display (main digits, aux, units, HV)."""
         main_text = combined_main_value_str(
@@ -759,28 +773,34 @@ class MainScreen(tk.Frame):
     def _toggle_hold(self) -> None:
         if self._last_hold:
             self.app.ble.send_command(COMMANDS["RUN"])
-            self._display_frozen = False
             self._set_hold_display(False)
         else:
             self.app.ble.send_command(COMMANDS["HOLD"])
-            self._display_frozen = True
             self._set_hold_display(True)
+        # _set_hold_display() just recorded the tapped state - arm the window
+        # that keeps the device's pre-toggle echoes from flipping it back.
+        self._hold_expected = bool(self._last_hold)
+        self._hold_until = time.monotonic() + NOTIFY_CONFIRM_WINDOW_S
 
     def update_measurement(self, m, rng_label: str, trace_key: int = 0) -> None:
         if self._bt_off_display:
             return
-
-        was_hold = self._last_hold
+        if self._is_stale_hold(m.hold):
+            return
 
         if m.hold:
             self._update_device_status(m)
-            if not was_hold:
-                self._display_frozen = True
-                if self._last_display_measurement is not None:
-                    self._render_measurement(*self._last_display_measurement)
+            prev = self._last_display_measurement
+            if prev is None or not prev[0].hold:
+                # A held frame carries the value the device latched, so render
+                # it rather than the last pre-HOLD frame - otherwise the display
+                # sits on a reading the device never held. _last_hold cannot
+                # serve as the "entering HOLD" test: a local RUN/HOLD tap has
+                # already set it by the time the device confirms.
+                self._last_display_measurement = (m, rng_label)
+                self._render_measurement(m, rng_label)
             return
 
-        self._display_frozen = False
         self._last_display_measurement = (m, rng_label)
         self._render_measurement(m, rng_label)
         if not self._mini_mode:

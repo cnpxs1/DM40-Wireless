@@ -319,7 +319,6 @@ class DM40App:
             self.show_main_screen()
 
     def cycle_mode(self, group_id: str) -> None:
-        self.main_screen.release_hold_freeze()
         self.ble.send_packet(self.mode_state.cycle_group(group_id))
         self.main_screen.refresh_mode_buttons(self.mode_state)
         self.main_screen.raise_click_layer()
@@ -374,8 +373,7 @@ class DM40App:
         if len(data) > 5:
             self._last_range_flag = data[5]
         if not m.hold:
-            self.mode_state.last_kind = m.kind
-            if self.mode_state.sync_from_kind(m.kind):
+            if self.mode_state.apply_notify(m.kind):
                 self.main_screen.refresh_mode_buttons(self.mode_state)
         rng = range_label_from_packet(data, m.range)
         trace_key = data[5] if len(data) > 5 else 0

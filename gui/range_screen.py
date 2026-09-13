@@ -172,6 +172,7 @@ class RangeScreen(tk.Frame):
         self.app.ble.send_command(COMMANDS[cmd_key])
         kind = kind_from_mode_cmd_key(cmd_key)
         if kind:
+            self.app.mode_state.expect_cmd(cmd_key)
             self.app.mode_state.last_kind = kind
             self.app.mode_state.sync_from_kind(kind)
             self.app.main_screen.refresh_mode_buttons(self.app.mode_state)

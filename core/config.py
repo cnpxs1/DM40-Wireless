@@ -63,6 +63,13 @@ CMD_DISCOVERY = b"\xaf\xff\xff\x00\x00\x53"
 CMD_POLL = b"\xaf\x05\x03\x09\x00\x40"
 POLL_RESPONSE_TIMEOUT = 0.35
 
+# After a local MODE / RUN / HOLD press the device answers the command before
+# it has finished switching, so the first notifications still carry the state
+# from before the press. A notification disagreeing with the pressed state
+# within this window is that echo and gets dropped; past it the device is
+# trusted again.
+NOTIFY_CONFIRM_WINDOW_S = 0.6
+
 # UI size = gui/layout.py (SCREEN_W × SCREEN_H) × window_scale in settings.json
 from gui.layout import SCREEN_H, SCREEN_W
 
