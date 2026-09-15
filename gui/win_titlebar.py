@@ -2,8 +2,10 @@
 
 from __future__ import annotations
 
+import contextlib
 import sys
 import tkinter as tk
+from typing import Any
 
 DEFAULT_CAPTION = "#292C31"
 DEFAULT_TEXT = "#F7F7F7"
@@ -21,27 +23,27 @@ def _hex_to_colorref(hex_color: str) -> int:
 
 
 def _hwnd(root: tk.Tk) -> int | None:
-    try:
-        import ctypes
+    """The handle Tk actually draws in, or None when it cannot be resolved."""
+    import ctypes
 
+    user32: Any = ctypes.windll.user32        # typeshed does not model windll
+    with contextlib.suppress(Exception):
         wid = root.winfo_id()
         if not wid:
             return None
-        hwnd = ctypes.windll.user32.GetParent(wid)
-        return hwnd or wid
-    except Exception:
-        return None
+        return user32.GetParent(wid) or wid
+    return None
 
 
 def _set_dwm_attr(hwnd: int, attr: int, value: int) -> None:
-    try:
-        import ctypes
+    """Best effort - an older Windows build may not know the attribute."""
+    import ctypes
 
-        ctypes.windll.dwmapi.DwmSetWindowAttribute(
+    dwmapi: Any = ctypes.windll.dwmapi        # typeshed does not model windll
+    with contextlib.suppress(Exception):
+        dwmapi.DwmSetWindowAttribute(
             hwnd, attr, ctypes.byref(ctypes.c_int(value)), ctypes.sizeof(ctypes.c_int),
         )
-    except Exception:
-        pass
 
 
 def apply_windows_titlebar(
@@ -75,17 +77,19 @@ def apply_windows_titlebar(
 
 def schedule_windows_titlebar(root: tk.Tk, **kwargs) -> None:
     """Dark title bar on startup and again on focus change (inactive window)."""
-    pending: dict[str, str | None] = {"id": None}
+    pending_id: str | None = None
 
     def _apply() -> None:
-        pending["id"] = None
+        nonlocal pending_id
+        pending_id = None
         if root.winfo_exists():
             apply_windows_titlebar(root, **kwargs)
 
     def _schedule(_event=None) -> None:
-        if pending["id"] is not None:
-            root.after_cancel(pending["id"])
-        pending["id"] = root.after(50, _apply)
+        nonlocal pending_id
+        if pending_id is not None:
+            root.after_cancel(pending_id)
+        pending_id = root.after(50, _apply)
 
     root.after_idle(_apply)
     for seq in ("<FocusIn>", "<FocusOut>", "<Map>"):

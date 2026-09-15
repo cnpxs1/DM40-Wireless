@@ -2,8 +2,12 @@
 
 from __future__ import annotations
 
+import contextlib
 import subprocess
 import sys
+
+# Matched by name so this module keeps working where bleak is absent.
+_BT_OFF_EXC_NAME = "BleakBluetoothNotAvailableError"
 
 _BT_OFF_ERROR_MARKERS = (
     "bluetooth radio is not powered",
@@ -28,13 +32,8 @@ exit 1
 
 
 def exception_indicates_bt_off(exc: BaseException) -> bool:
-    try:
-        from bleak.exc import BleakBluetoothNotAvailableError
-
-        if isinstance(exc, BleakBluetoothNotAvailableError):
-            return True
-    except ImportError:
-        pass
+    if _BT_OFF_EXC_NAME in (cls.__name__ for cls in type(exc).__mro__):
+        return True
     msg = str(exc).lower()
     return any(marker in msg for marker in _BT_OFF_ERROR_MARKERS)
 
@@ -43,7 +42,7 @@ def is_bluetooth_enabled() -> bool | None:
     """True = on, False = off, None = unknown (other OS / error)."""
     if sys.platform != "win32":
         return None
-    try:
+    with contextlib.suppress(Exception):    # any failure is "unknown", not fatal
         flags = getattr(subprocess, "CREATE_NO_WINDOW", 0)
         proc = subprocess.run(
             ["powershell", "-NoProfile", "-Command", _PS_CHECK],
@@ -55,6 +54,4 @@ def is_bluetooth_enabled() -> bool | None:
             return True
         if proc.returncode == 1:
             return False
-        return None
-    except Exception:
-        return None
+    return None

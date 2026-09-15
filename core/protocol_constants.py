@@ -35,7 +35,7 @@ def range_screen_title(kind: str) -> str:
     from core.i18n import t, toml_key
     return t(f"range_titles.{toml_key(kind)}")
 
-FLAG_INFO = {
+FLAG_INFO: dict[int, tuple[str, str]] = {
     0x00: ("VDC", "600mV"),
     0x08: ("VDC", "6V"),
     0x10: ("VDC", "60V"),

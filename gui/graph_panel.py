@@ -157,11 +157,12 @@ class GraphPanel:
         radius = self._s(L.GRAPH_REL_RADIUS)
         photo = self.sprites.rounded_button(color, rw, rh, radius)
         if photo:
-            self._rel_bg_id = self.canvas.create_image(
+            bg_id = self.canvas.create_image(
                 rx, ry, anchor="nw", image=photo,
                 tags=(self.TAG, "graph_rel_bg"),
             )
-            self.canvas.tag_lower(self._rel_bg_id, self._sidebar_ids["rel"])
+            self._rel_bg_id = bg_id
+            self.canvas.tag_lower(bg_id, self._sidebar_ids["rel"])
 
     def _layout_static(self) -> None:
         px, py, pw, ph = self._plot_px
@@ -388,7 +389,8 @@ class GraphPanel:
         pts: list[float] = []
         for i, v in enumerate(values):
             pts.extend((px + i * self._x_step, py + y0 - v * y_scale))
-        self.canvas.coords(self._trace_id, *pts)
+        if self._trace_id is not None:
+            self.canvas.coords(self._trace_id, *pts)
 
         self.canvas.itemconfigure(self._scale_ids["top"], text=self._scale_label(hi))
         self.canvas.itemconfigure(self._scale_ids["bot"], text=self._scale_label(lo))

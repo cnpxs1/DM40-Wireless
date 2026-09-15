@@ -102,6 +102,10 @@ class BleWorker:
         """Let _ble_loop connect again - called once a device has been picked."""
         self._paused = False
 
+    def set_raw_callback(self, callback: Callable[[str, bytes], None] | None) -> None:
+        """Send TX/RX traffic to this callback, or drop it when None."""
+        self._callbacks.on_raw_traffic = callback
+
     def _schedule(self, coro) -> None:
         if self._loop and self._client and self._client.is_connected:
             asyncio.run_coroutine_threadsafe(coro, self._loop)

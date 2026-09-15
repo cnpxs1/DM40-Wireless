@@ -10,7 +10,7 @@ from core.protocol_constants import CMD_ID
 from core.i18n import t, get_i18n
 from gui import layout as display_layout
 from core.modes import MODE_CYCLE_GROUPS, ModeState
-from core.parsing import MODEL, range_label_from_packet
+from core.parsing import MODEL, Measurement, range_label_from_packet
 from gui.confirm_dialog import cancel_pending
 from gui.main_screen import MainScreen
 from gui.range_screen import RangeScreen
@@ -68,9 +68,10 @@ class DM40App:
         self._last_range_flag = 0
         self._raw_rx_burst_until = 0.0
         self._last_raw_line = ""
+        self._screen_before_settings: str = ""
         self._raw_poll_pending: str | None = None
         self._raw_poll_after: str | None = None
-        self._meas_pending: tuple[object, bytes] | None = None
+        self._meas_pending: tuple[Measurement, bytes] | None = None
         self._meas_scheduled = False
         self._ble_started = False
 
@@ -190,7 +191,7 @@ class DM40App:
 
     def _sync_raw_callback(self) -> None:
         """Without RAW console, do not call callback from BLE thread (every poll TX+RX)."""
-        self.ble._callbacks.on_raw_traffic = (
+        self.ble.set_raw_callback(
             self._on_raw_traffic if self.settings.get("raw_console") else None
         )
 
