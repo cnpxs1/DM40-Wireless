@@ -229,7 +229,9 @@ class SettingsScreen(tk.Frame):
         """Lift the popup back above our window.
 
         overrideredirect drops the owner that ``transient`` sets, so nothing
-        else keeps it in front of the main window it partly overlaps.
+        else keeps it in front of the main window it partly overlaps. Pinning
+        is done at creation; reading ``-topmost`` here would re-enter the
+        <Configure> handler that calls us.
         """
         if self._lang_popup is not None:
             self._lang_popup.lift()
@@ -322,6 +324,10 @@ class SettingsScreen(tk.Frame):
         popup.withdraw()                    # hidden until it has a position
         _make_borderless(popup)
         popup.transient(self.app.root)
+        # Match a pinned window - topmost outranks the normal layer and lift()
+        # cannot cross layers. Set once here, never in the Configure handler,
+        # which would loop on the window manager's own reconfigure.
+        popup.attributes("-topmost", bool(self.app.root.attributes("-topmost")))
         popup.configure(bg=rgb_hex("buttons_active"))
 
         inner = tk.Frame(popup, bg=rgb_hex("background"), padx=pad, pady=pad)
@@ -371,7 +377,7 @@ class SettingsScreen(tk.Frame):
         self._lang_size = (popup_w, popup_h)
         self._place_lang_popup()
         popup.deiconify()                   # positioned - showing it now is safe
-        popup.lift()                        # and above our own window
+        self._lift_lang_popup()             # and above our own window
 
         root = self.app.root
         self._lang_binds = [
