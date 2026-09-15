@@ -137,6 +137,8 @@ echo.
 if exist "dist\app.dist" rmdir /S /Q "dist\app.dist"
 if exist "dist\DM40 Wireless" rmdir /S /Q "dist\DM40 Wireless"
 
+REM Pillow ships AVIF and WebP decoders (~8 MB) this app never touches - images/
+REM is all PNG. PIL's Image.init() skips plugins whose import fails, so it is safe.
 "%PY%" -m nuitka ^
   --standalone ^
   --windows-console-mode=disable ^
@@ -144,10 +146,14 @@ if exist "dist\DM40 Wireless" rmdir /S /Q "dist\DM40 Wireless"
   --company-name="Urobotos" ^
   --product-name="DM40 Wireless" ^
   --file-description="DM40 Wireless - Bluetooth multimeter desktop app" ^
-  --file-version=1.2.0 ^
-  --product-version=1.2.0 ^
+  --file-version=1.3.0 ^
+  --product-version=1.3.0 ^
   --copyright="Copyright (C) 2026 Urobotos" ^
   --enable-plugin=tk-inter ^
+  --lto=yes ^
+  --python-flag=-OO ^
+  --nofollow-import-to=PIL.AvifImagePlugin ^
+  --nofollow-import-to=PIL.WebPImagePlugin ^
   --include-data-dir=images=images ^
   --include-data-files=i18n/en-US.toml=i18n/en-US.toml ^
   --include-package=bleak ^
