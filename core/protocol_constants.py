@@ -1,8 +1,8 @@
 """DM40 BLE protocol – constants for parsing measurement frames."""
 
-HEADER = b"\xdf\x05\x03\x09"
-MODEL_PACKET_PREFIX = b"\xdf\x05\x03\x08\x14"
-CMD_ID = b"\xaf\x05\x03\x08\x00\x41"
+HEADER: bytes = b"\xdf\x05\x03\x09"
+MODEL_PACKET_PREFIX: bytes = b"\xdf\x05\x03\x08\x14"
+CMD_ID: bytes = b"\xaf\x05\x03\x08\x00\x41"
 
 MODEL_TABLE = (("DM40A", 40000), ("DM40B", 50000), ("DM40C", 60000))
 

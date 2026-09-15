@@ -156,8 +156,13 @@ class BleWorker:
                     if guess_model_from_ble_name(client.name or ""):
                         self._callbacks.on_model()
 
-                    self._poll_ready = asyncio.Event()
-                    self._ble_lock = asyncio.Lock()
+                    # Local names as well as the attributes: the poll loop runs
+                    # long, and the type checker gives up narrowing the
+                    # attributes to non-None across the awaits in between.
+                    poll_ready = asyncio.Event()
+                    lock = asyncio.Lock()
+                    self._poll_ready = poll_ready
+                    self._ble_lock = lock
                     await client.start_notify(NOTIFY_UUID, self._on_notify)
                     self._emit_raw("TX", CMD_DISCOVERY)
                     await client.write_gatt_char(WRITE_UUID, CMD_DISCOVERY)
@@ -165,13 +170,13 @@ class BleWorker:
                     self._callbacks.on_connected()
 
                     while client.is_connected and not self._paused:
-                        async with self._ble_lock:
-                            self._poll_ready.clear()
+                        async with lock:
+                            poll_ready.clear()
                             self._emit_raw("TX", CMD_POLL)
                             await client.write_gatt_char(WRITE_UUID, CMD_POLL)
                             try:
                                 await asyncio.wait_for(
-                                    self._poll_ready.wait(),
+                                    poll_ready.wait(),
                                     timeout=POLL_RESPONSE_TIMEOUT,
                                 )
                             except asyncio.TimeoutError:

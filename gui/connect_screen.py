@@ -79,10 +79,9 @@ class ConnectScreen(tk.Frame):
 
     def _place_settings_icon(self) -> None:
         """Settings icon in the top bar (same position as main screen)."""
-        photo = self._top_bar_icon("settings.png", L.TOP_BAR_SETTINGS_W)
+        photo = self._top_bar_icon("settings.png", L.TOP_BAR_ICON_SLOT)
         if photo:
-            self._show_sprite("settings", photo,
-                              self._s(L.SETTINGS_IMG[0]), self._s(L.SETTINGS_IMG[1]))
+            self._place_top_icon("settings", photo, L.TOP_BAR_SETTINGS_X)
         sx, sy, sw, sh = L.SETTINGS_HIT
         bind_clickable(
             self.canvas, self._s(sx), self._s(sy), self._s(sw), self._s(sh),
@@ -99,12 +98,18 @@ class ConnectScreen(tk.Frame):
             max_w=self._s(max_w), max_h=self._s(L.TOP_BAR_ICON_H),
         )
 
-    def _show_sprite(self, key: str, photo: tk.PhotoImage, x: int, y: int) -> None:
+    def _show_sprite(self, key: str, photo: tk.PhotoImage, x: int, y: int,
+                     anchor: str = "nw") -> None:
         if key in self._sprite_ids:
             self.canvas.delete(self._sprite_ids[key])
         self._sprite_ids[key] = self.canvas.create_image(
-            x, y, anchor="nw", image=photo, tags="connect_chrome",
+            x, y, anchor=anchor, image=photo, tags="connect_chrome",
         )
+
+    def _place_top_icon(self, key: str, photo: tk.PhotoImage, x: float) -> None:
+        """Centre a top bar icon in its slot, as the main screen does."""
+        cx, cy = L.top_icon_pos(x)
+        self._show_sprite(key, photo, self._s(cx), self._s(cy), anchor="center")
 
     def _hide_sprite(self, key: str) -> None:
         item = self._sprite_ids.pop(key, None)
@@ -112,9 +117,9 @@ class ConnectScreen(tk.Frame):
             self.canvas.delete(item)
 
     def _show_bt_icon(self) -> None:
-        photo = self._top_bar_icon("bluetooth.png", L.TOP_BAR_BT_W)
+        photo = self._top_bar_icon("bluetooth.png", L.TOP_BAR_ICON_SLOT)
         if photo:
-            self._show_sprite("bt", photo, self._s(L.BT_IMG[0]), self._s(L.BT_IMG[1]))
+            self._place_top_icon("bt", photo, L.TOP_BAR_BT_X)
 
     def _stop_bt_pulse(self) -> None:
         if self._ble_pulse_after is not None:

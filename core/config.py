@@ -59,8 +59,8 @@ UI_STATE_PATH = PROJECT_ROOT / "dm40_ui_state.json"
 TARGET_MAC = ""
 WRITE_UUID = "0000fff3-0000-1000-8000-00805f9b34fb"
 NOTIFY_UUID = "0000fff1-0000-1000-8000-00805f9b34fb"
-CMD_DISCOVERY = b"\xaf\xff\xff\x00\x00\x53"
-CMD_POLL = b"\xaf\x05\x03\x09\x00\x40"
+CMD_DISCOVERY: bytes = b"\xaf\xff\xff\x00\x00\x53"
+CMD_POLL: bytes = b"\xaf\x05\x03\x09\x00\x40"
 POLL_RESPONSE_TIMEOUT = 0.35
 
 # After a local MODE / RUN / HOLD press the device answers the command before

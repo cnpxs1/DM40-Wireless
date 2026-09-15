@@ -118,9 +118,9 @@ def _scale_info(kind: str, slot: str, scale_flag: int) -> tuple | None:
         return FREQ_SCALE_MAP.get(scale_flag)
     if slot not in ("M1", "DC", "AC"):
         if slot == "TC" and kind == "TEMP":
-            return (6000.0, "°C", 1.0, 1)
+            return 6000.0, "°C", 1.0, 1
         if slot == "RES" and kind == "DIODE":
-            return (6000.0, "Ω", 1.0, 1)
+            return 6000.0, "Ω", 1.0, 1
         return None
     if kind.startswith("V") or kind == "DIODE":
         return ALT_SCALE_MAP.get(scale_flag)

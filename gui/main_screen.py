@@ -22,6 +22,17 @@ from gui.sprites import SpriteCache, main_unit_filename
 from gui.fonts import gui_font
 from gui.theme import rgb_hex
 
+# The top bar buttons: key, click area, hotspot tag. One list, so adding a
+# button is a single edit - _draw_chrome makes its hilite box, and
+# _rebind_top_hover lays that box over the click area and arms the hover.
+_TOP_BAR_BUTTONS = (
+    ("range", L.RANGE_HIT, "hit_range"),
+    ("hold", L.HOLD_HIT, "hit_hold"),
+    ("settings", L.SETTINGS_HIT, "hit_settings"),
+    ("bt", L.BT_HIT, "hit_bt"),
+)
+
+
 class MainScreen(tk.Frame):
     def __init__(self, master, app, scale: float) -> None:
         super().__init__(master, bg=rgb_hex("background"))
@@ -42,6 +53,8 @@ class MainScreen(tk.Frame):
         self._mode_btn_ids: list[str] = []
         self._mode_bg_ids: dict[str, int] = {}
         self._mode_hover = HoverGroup(self.canvas, self._on_mode_hover_change)
+        self._top_hover = HoverGroup(self.canvas, self._on_top_hover_change)
+        self._top_hl_ids: dict[str, int] = {}
         self._last_range_label = ""
         self._last_hold: bool | None = None
         self._hold_expected: bool | None = None
@@ -114,6 +127,16 @@ class MainScreen(tk.Frame):
             self.canvas.delete(self._sprite_ids[key])
         self._sprite_ids[key] = self.canvas.create_image(x, y, anchor=anchor, image=photo, tags="sprite")
 
+    def _place_top_icon(self, key: str, photo: tk.PhotoImage, x: float) -> None:
+        """Centre a top bar icon in its slot.
+
+        The sprites keep their aspect ratio, so they come out at different
+        widths - aligned by their top-left corner the row looks ragged, and an
+        icon sits off-centre in the hilite that lights up around it.
+        """
+        cx, cy = L.top_icon_pos(x)
+        self._show_sprite(key, photo, self._s(cx), self._s(cy), anchor="center")
+
     def _top_bar_status_font(self) -> tuple[str, int, str]:
         return gui_font(self.app.settings, self._s(L.TOP_BAR_STATUS_FONT), "normal")
 
@@ -126,6 +149,13 @@ class MainScreen(tk.Frame):
             0, 0, self._s(L.SCREEN_W), self._s(L.TOP_BAR_H),
             fill=rgb_hex("top_bar_background"), outline="",
         )
+        # Empty boxes the top bar buttons light up. They go here, above the bar
+        # and below everything drawn on it; _rebind_top_hover lays them over the
+        # click areas.
+        for key, _, _ in _TOP_BAR_BUTTONS:
+            self._top_hl_ids[key] = self.canvas.create_rectangle(
+                0, 0, 0, 0, fill="", outline="", tags="top_hl",
+            )
         for i, (sx, sy, sw, sh) in enumerate(L.save_slot_slots()):
             rx, ry, rw, rh = self._s(sx), self._s(sy), self._s(sw), self._s(sh)
             radius = self._s(L.SAVE_SLOT_RADIUS)
@@ -323,21 +353,18 @@ class MainScreen(tk.Frame):
         return reported != self._hold_expected
 
     def _set_settings_display(self) -> None:
-        photo = self._top_bar_icon("settings.png", L.TOP_BAR_SETTINGS_W)
+        photo = self._top_bar_icon("settings.png", L.TOP_BAR_ICON_SLOT)
         if photo:
-            self._show_sprite(
-                "settings", photo,
-                self._s(L.SETTINGS_IMG[0]), self._s(L.SETTINGS_IMG[1]),
-            )
+            self._place_top_icon("settings", photo, L.TOP_BAR_SETTINGS_X)
 
     def _set_lock_display(self, locked: bool) -> None:
         if locked == self._last_locked:
             return
         self._last_locked = locked
         name = "screen_locked.png" if locked else "screen_unlocked.png"
-        photo = self._top_bar_icon(name, L.TOP_BAR_LOCK_W)
+        photo = self._top_bar_icon(name, L.TOP_BAR_ICON_SLOT)
         if photo:
-            self._show_sprite("lock", photo, self._s(L.LOCK_IMG[0]), self._s(L.LOCK_IMG[1]))
+            self._place_top_icon("lock", photo, L.TOP_BAR_LOCK_X)
         elif locked:
             self._hide_sprite("lock")
 
@@ -348,15 +375,15 @@ class MainScreen(tk.Frame):
         self._last_battery = state
         photo = self.sprites.battery_sprite(
             bars, charging, self.scale,
-            max_w=self._s(L.TOP_BAR_BATTERY_W), max_h=self._s(L.TOP_BAR_ICON_H),
+            max_w=self._s(L.TOP_BAR_ICON_SLOT), max_h=self._s(L.TOP_BAR_ICON_H),
         )
         if photo:
-            self._show_sprite("battery", photo, self._s(L.BATTERY_IMG[0]), self._s(L.BATTERY_IMG[1]))
+            self._place_top_icon("battery", photo, L.TOP_BAR_BATT_X)
 
     def _show_bt_icon(self) -> None:
-        photo = self._top_bar_icon("bluetooth.png", L.TOP_BAR_BT_W)
+        photo = self._top_bar_icon("bluetooth.png", L.TOP_BAR_ICON_SLOT)
         if photo:
-            self._show_sprite("bt", photo, self._s(L.BT_IMG[0]), self._s(L.BT_IMG[1]))
+            self._place_top_icon("bt", photo, L.TOP_BAR_BT_X)
 
     def _stop_ble_pulse(self) -> None:
         if self._ble_pulse_after_id is not None:
@@ -552,7 +579,8 @@ class MainScreen(tk.Frame):
     def _draw_mode_buttons(self) -> None:
         self._mode_btn_ids = [gid for gid, _ in MODE_CYCLE_GROUPS]
 
-    def _mode_bg_color(self, gid: str, active: bool, hovered: bool) -> str:
+    @staticmethod
+    def _mode_bg_color(active: bool, hovered: bool) -> str:
         """Blue wins over hover - the selected mode has to stay readable."""
         if active:
             return "buttons_active"
@@ -560,7 +588,7 @@ class MainScreen(tk.Frame):
 
     def _place_mode_button_bg(self, gid: str, rx: int, ry: int, rw: int, rh: int, active: bool) -> int | None:
         photo = self.sprites.rounded_button(
-            self._mode_bg_color(gid, active, False), rw, rh, self._s(L.MODE_BTN_RADIUS),
+            self._mode_bg_color(active, False), rw, rh, self._s(L.MODE_BTN_RADIUS),
         )
         if not photo:
             return None
@@ -573,6 +601,33 @@ class MainScreen(tk.Frame):
         self._repaint_mode_bg(previous)
         self._repaint_mode_bg(current)
 
+    def _rebind_top_hover(self) -> None:
+        """Track hover for the top bar buttons that do something.
+
+        The hilite covers the button's click area, so what lights up is exactly
+        what responds to the click - not just the label drawn inside it.
+        """
+        self._top_hover.clear()
+        for key, hit_box, hit_tag in _TOP_BAR_BUTTONS:
+            x, y, w, h = (self._s(v) for v in hit_box)
+            self._top_hover.add(key, (x, y, w, h), hit_tag)
+            item = self._top_hl_ids.get(key)
+            if item is not None:
+                self.canvas.coords(item, x, y, x + w, y + h)
+
+    def _on_top_hover_change(self, previous: str | None, current: str | None) -> None:
+        """Light the button under the pointer, clear the one it just left."""
+        self._paint_top_button(current, True)
+        self._paint_top_button(previous, False)
+
+    def _paint_top_button(self, key: str | None, lit: bool) -> None:
+        """Set one top bar button's hilite."""
+        if key is None:
+            return
+        item = self._top_hl_ids.get(key)
+        if item is not None:
+            self.canvas.itemconfig(item, fill=rgb_hex("buttons_hover") if lit else "")
+
     def _repaint_mode_bg(self, gid: str | None) -> None:
         """Swap one MODE button between idle / hover / selected backgrounds."""
         if gid is None:
@@ -584,7 +639,7 @@ class MainScreen(tk.Frame):
         _rx, _ry, rw, rh = box
         photo = self.sprites.rounded_button(
             self._mode_bg_color(
-                gid, self.app.mode_state.active_group == gid, self._mode_hover.is_hovered(gid),
+                self.app.mode_state.active_group == gid, self._mode_hover.is_hovered(gid),
             ),
             rw, rh, self._s(L.MODE_BTN_RADIUS),
         )
@@ -718,6 +773,7 @@ class MainScreen(tk.Frame):
             debug=dbg, debug_color="#20a080",
         )
 
+        self._rebind_top_hover()
         self._rebind_mode_hotspots(L.mode_button_slots(mini=self._mini_mode))
         self._bind_main_value_save()
         self.raise_click_layer()

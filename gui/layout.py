@@ -29,48 +29,29 @@ RANGE_HIT = (_TOP_HIT_X, _TOP_HIT_Y, HOLD_HIT_X - _TOP_HIT_GAP - _TOP_HIT_X, _TO
 HOLD_HIT = (HOLD_HIT_X, _TOP_HIT_Y, HOLD_HIT_W, _TOP_HIT_H)
 
 # Right top bar cluster (left to right: SETTINGS → LOCK → BLE → BATT) – tune here
-TOP_BAR_ICON_Y = 10
-TOP_BAR_ICON_H = 16
-TOP_BAR_ICON_GAP = 18
-TOP_BAR_SETTINGS_W = 27
-TOP_BAR_LOCK_W = 27
-TOP_BAR_BT_W = 19
-TOP_BAR_BATTERY_W = 34
+TOP_BAR_ICON_H = 16             # tallest an icon may be drawn
+# Icons sit in slots of one width, spaced by one gap. The sprites keep their
+# aspect ratio and come out different widths (16 / 19 / 10 / 34 px today), so
+# equal slots are what keep their centres evenly spaced.
+TOP_BAR_ICON_SLOT = 34          # the widest sprite still fits
+TOP_BAR_ICON_GAP = 8
+# Icons are placed by their centre, on the click areas' centre line - see
+# top_icon_pos().
+TOP_BAR_ICON_CY = _TOP_HIT_Y + _TOP_HIT_H / 2
 TOP_BAR_RIGHT_MARGIN = 5
 
-_TOP_CLUSTER_W = (
-    TOP_BAR_SETTINGS_W + TOP_BAR_ICON_GAP
-    + TOP_BAR_LOCK_W + TOP_BAR_ICON_GAP
-    + TOP_BAR_BT_W + TOP_BAR_ICON_GAP
-    + TOP_BAR_BATTERY_W
-)
+_TOP_CLUSTER_W = 4 * TOP_BAR_ICON_SLOT + 3 * TOP_BAR_ICON_GAP
 TOP_BAR_SETTINGS_X = SCREEN_W - TOP_BAR_RIGHT_MARGIN - _TOP_CLUSTER_W
-TOP_BAR_LOCK_X = TOP_BAR_SETTINGS_X + TOP_BAR_SETTINGS_W + TOP_BAR_ICON_GAP
-TOP_BAR_BT_X = TOP_BAR_LOCK_X + TOP_BAR_LOCK_W + TOP_BAR_ICON_GAP
-TOP_BAR_BATT_X = TOP_BAR_BT_X + TOP_BAR_BT_W + TOP_BAR_ICON_GAP
+TOP_BAR_LOCK_X = TOP_BAR_SETTINGS_X + TOP_BAR_ICON_SLOT + TOP_BAR_ICON_GAP
+TOP_BAR_BT_X = TOP_BAR_LOCK_X + TOP_BAR_ICON_SLOT + TOP_BAR_ICON_GAP
+TOP_BAR_BATT_X = TOP_BAR_BT_X + TOP_BAR_ICON_SLOT + TOP_BAR_ICON_GAP
 
-_SETTINGS_HIT_PAD = 4
-SETTINGS_HIT = (
-    TOP_BAR_SETTINGS_X - _SETTINGS_HIT_PAD,
-    _TOP_HIT_Y,
-    TOP_BAR_SETTINGS_W + 2 * _SETTINGS_HIT_PAD,
-    _TOP_HIT_H,
-)
+# Click areas for the top bar icon buttons: one per slot, so a button is the
+# same size wherever it sits and the hilite lines up with the icon on it.
+SETTINGS_HIT = (TOP_BAR_SETTINGS_X, _TOP_HIT_Y, TOP_BAR_ICON_SLOT, _TOP_HIT_H)
 
-# BLE icon – tapping it offers to drop the link. Pad stays well inside the
-# 18 px gap to the neighbouring icons.
-_BT_HIT_PAD = 4
-BT_HIT = (
-    TOP_BAR_BT_X - _BT_HIT_PAD,
-    _TOP_HIT_Y,
-    TOP_BAR_BT_W + 2 * _BT_HIT_PAD,
-    _TOP_HIT_H,
-)
-
-SETTINGS_IMG = (TOP_BAR_SETTINGS_X, TOP_BAR_ICON_Y)
-LOCK_IMG = (TOP_BAR_LOCK_X, TOP_BAR_ICON_Y)
-BT_IMG = (TOP_BAR_BT_X, TOP_BAR_ICON_Y)
-BATTERY_IMG = (TOP_BAR_BATT_X, TOP_BAR_ICON_Y)
+# BLE icon – tapping it offers to drop the link.
+BT_HIT = (TOP_BAR_BT_X, _TOP_HIT_Y, TOP_BAR_ICON_SLOT, _TOP_HIT_H)
 
 # Top AUX1 and AUX2 displays – duty, Hz, AC/DC components, …
 AUX_ROW_Y = 48
@@ -104,6 +85,11 @@ MAIN_UNIT_MAX_H = max(MAIN_VALUE_ROW_H, MAIN_UNIT_H)
 MAIN_UNIT_RIGHT_GAP = MAIN_DIGITS_UNIT_GAP
 MAIN_VALUE_LEFT = MAIN_HV_LEFT_MARGIN
 MAIN_VALUE = (MAIN_VALUE_LEFT, MAIN_VALUE_ROW_CY)
+
+
+def top_icon_pos(slot_x: float) -> tuple[float, float]:
+    """Where a top bar icon's centre goes, for the slot starting at slot_x."""
+    return slot_x + TOP_BAR_ICON_SLOT / 2, TOP_BAR_ICON_CY
 
 
 def main_value_layout() -> dict[str, tuple[int, int, int, int]]:
