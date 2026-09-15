@@ -1,9 +1,7 @@
-"""Modal yes/no popup, drawn to match the app's dark canvas look.
+"""Modal confirmation drawn on top of a screen's own canvas.
 
-``messagebox`` would be one line, but the rest of the UI is self-drawn, so the
-confirmation is built the same way the language dropdown is: a borderless
-Toplevel positioned under the widget that opened it, dismissed by clicking
-outside.
+Drawn on the canvas rather than in a Toplevel so it is part of the window: it
+moves with it and never flickers.
 """
 
 from __future__ import annotations
@@ -15,15 +13,38 @@ from gui.fonts import gui_font
 from gui.sprites import SpriteCache
 from gui.theme import rgb_hex
 
+TAG = "confirm_dialog"      # carried by every item of the overlay
 _BTN_W = 78
 _BTN_H = 28
 _BTN_GAP = 8
+_PANEL_W = 300
 _PAD = 16
-_TEXT_W = 250
+_TITLE_H = 28               # gap below the title before the body starts
+
+_pending: "tk.BooleanVar | None" = None     # the question on screen, if any
+
+
+def cancel_pending() -> None:
+    """Answer "no" to an open confirmation, if there is one.
+
+    Call before destroying the window: ``wait_variable`` never returns once the
+    interpreter is gone, so the process would hang instead of exiting.
+    """
+    if _pending is not None:
+        _pending.set(False)
+
+
+def raise_overlay(canvas: tk.Canvas) -> None:
+    """Lift the overlay back above the click hotspots.
+
+    Screens raise the hotspots on every repaint; without this they end up over
+    the dialog and steal its clicks.
+    """
+    canvas.tag_raise(TAG)
 
 
 def ask_confirm(
-    root: tk.Tk,
+    canvas: tk.Canvas,
     sprites: SpriteCache,
     settings: dict | None,
     *,
@@ -33,83 +54,85 @@ def ask_confirm(
     no_text: str,
     scale: float = 1.0,
 ) -> bool:
-    """Ask a yes/no question in a popup centred on the main window.
+    """Ask a yes/no question over ``canvas``; True only for the yes button.
 
-    Returns True only for the affirmative button; a click outside counts as
-    cancel, matching the language dropdown. Blocks until the popup closes.
+    Clicking outside the panel cancels. Blocks the caller through
+    ``wait_variable``, not the event loop, so the window keeps repainting.
     """
     def s(value: float) -> int:
         return int(value * scale)
 
-    result = {"ok": False}
-    dismiss_bind: str | None = None
-    follow_bind: str | None = None
+    global _pending
+    result = tk.BooleanVar(master=canvas, value=False)
+    cw, ch = canvas.winfo_width(), canvas.winfo_height()
 
-    popup = tk.Toplevel(root)
-    popup.overrideredirect(True)
-    popup.attributes("-topmost", True)
-    popup.configure(bg=rgb_hex("buttons_active"))   # reads as a 1 px border
+    # Invisible on purpose: it only swallows clicks aimed at the screen below.
+    # Tk has no alpha on canvas items, and stipple would shred the readout.
+    canvas.create_rectangle(
+        0, 0, cw, ch, fill="", outline="", tags=(TAG, f"{TAG}_veil"),
+    )
 
-    body = tk.Frame(popup, bg=rgb_hex("background"), padx=s(_PAD), pady=s(_PAD))
-    body.pack(padx=1, pady=1)
+    panel_w = s(_PANEL_W)
+    panel_x = (cw - panel_w) // 2
+    panel_y = ch // 3
+    inner_w = panel_w - 2 * s(_PAD)
 
-    tk.Label(
-        body, text=title, bg=rgb_hex("background"), fg=rgb_hex("text_primary"),
-        font=gui_font(settings, s(15), "bold"), anchor="w",
-    ).pack(fill="x")
+    title_id = canvas.create_text(
+        panel_x + s(_PAD), panel_y + s(_PAD), text=title, anchor="nw",
+        fill=rgb_hex("text_primary"), font=gui_font(settings, s(15), "bold"),
+        width=inner_w, tags=TAG,
+    )
+    body_id = canvas.create_text(
+        panel_x + s(_PAD), panel_y + s(_PAD) + s(_TITLE_H), text=message, anchor="nw",
+        fill=rgb_hex("text_secondary"), font=gui_font(settings, s(13), "normal"),
+        width=inner_w, tags=TAG,
+    )
 
-    tk.Label(
-        body, text=message, bg=rgb_hex("background"), fg=rgb_hex("text_secondary"),
-        font=gui_font(settings, s(13), "normal"), anchor="w", justify="left",
-        wraplength=s(_TEXT_W),
-    ).pack(fill="x", pady=(s(6), s(14)))
+    # The body wraps at inner_w, so its height is only known once measured.
+    canvas.update_idletasks()
+    body_bottom = canvas.bbox(body_id)[3]
+    panel_h = (body_bottom - panel_y) + s(_PAD + _BTN_H + _PAD)
 
-    row = tk.Frame(body, bg=rgb_hex("background"))
-    row.pack(anchor="e")
+    panel_id = canvas.create_image(
+        panel_x, panel_y, anchor="nw",
+        image=sprites.rounded_button("buttons", panel_w, panel_h, s(L.MODE_BTN_RADIUS)),
+        tags=(TAG, f"{TAG}_panel"),
+    )
+    for item in (panel_id, title_id, body_id):
+        canvas.tag_raise(item)          # panel under, text on top
 
     def close() -> None:
-        if dismiss_bind is not None:
-            root.unbind("<Button-1>", dismiss_bind)
-        if follow_bind is not None:
-            root.unbind("<Configure>", follow_bind)
-        popup.destroy()
+        canvas.delete(TAG)
 
     def pick(confirmed: bool) -> None:
-        result["ok"] = confirmed
+        result.set(confirmed)
         close()
 
-    # Cancel first, affirmative second - the confirm stays on the right.
-    # The image needs no reference on the widget: SpriteCache holds it.
-    for label, color, is_confirm in ((no_text, "buttons", False),
-                                     (yes_text, "buttons_active", True)):
-        photo = sprites.rounded_button(color, s(_BTN_W), s(_BTN_H), s(L.MODE_BTN_RADIUS))
-        button = tk.Label(
-            row, text=label, bg=rgb_hex("background"), fg=rgb_hex("text_primary"),
-            font=gui_font(settings, s(13), "normal"), bd=0,
-            **({"image": photo, "compound": "center"} if photo else {}),
+    top = panel_y + panel_h - s(_PAD + _BTN_H)
+    # Cancel left, confirm right. Cancel uses range_buttons because "buttons" is
+    # the panel's own colour and would make the button invisible.
+    buttons = ((no_text, "range_buttons", False), (yes_text, "buttons_active", True))
+    for index, (label, color, is_confirm) in enumerate(buttons):
+        bw, bh = s(_BTN_W), s(_BTN_H)
+        bx = panel_x + panel_w - s(_PAD) - (2 - index) * (bw + s(_BTN_GAP)) + s(_BTN_GAP)
+        photo = sprites.rounded_button(color, bw, bh, s(L.MODE_BTN_RADIUS))
+        if photo:
+            canvas.create_image(bx, top, anchor="nw", image=photo, tags=(TAG, f"{TAG}_btn"))
+        canvas.create_text(
+            bx + bw // 2, top + bh // 2, text=label, anchor="center",
+            fill=rgb_hex("text_primary"), font=gui_font(settings, s(13), "normal"),
+            tags=(TAG, f"{TAG}_btn"),
         )
-        button.pack(side="left", padx=((s(_BTN_GAP), 0) if is_confirm else 0))
-        button.bind("<Button-1>", lambda _e, c=is_confirm: pick(c))
+        hit = f"{TAG}_hit_{index}"
+        canvas.create_rectangle(
+            bx, top, bx + bw, top + bh, fill="", outline="", tags=(TAG, hit),
+        )
+        canvas.tag_bind(hit, "<Button-1>", lambda _e, c=is_confirm: pick(c))
 
-    def dismiss(event: tk.Event) -> None:
-        px, py = popup.winfo_rootx(), popup.winfo_rooty()
-        inside = (px <= event.x_root <= px + popup.winfo_width()
-                  and py <= event.y_root <= py + popup.winfo_height())
-        if not inside:
-            pick(False)
+    canvas.tag_bind(f"{TAG}_veil", "<Button-1>", lambda _e: pick(False))
+    raise_overlay(canvas)
 
-    root.update_idletasks()
-    popup.update_idletasks()
-    w, h = body.winfo_reqwidth() + 2, body.winfo_reqheight() + 2
-
-    def reposition(_event=None) -> None:
-        """Keep the popup centred while the window underneath it moves."""
-        x = root.winfo_rootx() + (root.winfo_width() - w) // 2
-        y = root.winfo_rooty() + (root.winfo_height() - h) // 2
-        popup.geometry(f"+{x}+{y}")
-
-    reposition()
-    follow_bind = root.bind("<Configure>", reposition, add="+")
-    dismiss_bind = root.bind("<Button-1>", dismiss, add="+")
-    root.wait_window(popup)
-    return result["ok"]
+    _pending = result
+    canvas.wait_variable(result)
+    _pending = None
+    return result.get()

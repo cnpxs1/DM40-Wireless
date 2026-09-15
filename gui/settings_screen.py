@@ -19,6 +19,12 @@ from gui.theme import rgb_hex
 
 
 _HIT_GROUP = "settings_hits"   # lets rebuild() drop every hit area at once
+_POPUP_GAP = 2                 # px between the selector row and the dropdown
+
+
+def _inside(box: tuple[int, int, int, int], x: int, y: int) -> bool:
+    bx, by, bw, bh = box
+    return bx <= x < bx + bw and by <= y < by + bh
 
 
 def _reveal_in_file_manager(path: str) -> None:
@@ -55,7 +61,9 @@ class SettingsScreen(tk.Frame):
         self._title_id: int | None = None
         self._back_sprite_id: int | None = None
         self._lang_popup: tk.Toplevel | None = None
-        self._lang_popup_dismiss_bind: str | None = None
+        self._lang_anchor: tuple[int, int, int, int] | None = None   # selector, canvas px
+        self._lang_size: tuple[int, int] | None = None                # popup, px
+        self._lang_binds: list[tuple[str, str]] = []   # (sequence, funcid) on the root
         self._folder_focus_bind: str | None = None
 
         self._draw_top_bar()
@@ -177,15 +185,66 @@ class SettingsScreen(tk.Frame):
         self.rebuild()
 
     def _close_lang_popup(self) -> None:
-        if self._lang_popup is not None:
+        """Drop the dropdown; safe to call when it is not open."""
+        popup, self._lang_popup = self._lang_popup, None
+        if popup is not None:
             try:
-                self._lang_popup.destroy()
+                popup.destroy()
             except tk.TclError:
                 pass
-            self._lang_popup = None
-        if self._lang_popup_dismiss_bind:
-            self.app.root.unbind("<Button-1>", self._lang_popup_dismiss_bind)
-            self._lang_popup_dismiss_bind = None
+        self._lang_anchor = None
+        self._lang_size = None
+        for sequence, funcid in self._lang_binds:
+            self.app.root.unbind(sequence, funcid)
+        self._lang_binds.clear()
+
+    def _place_lang_popup(self) -> None:
+        """Park the popup under the selector, in screen coordinates."""
+        if self._lang_popup is None or self._lang_anchor is None or self._lang_size is None:
+            return
+        rx, ry, rw, rh = self._lang_anchor
+        popup_w, popup_h = self._lang_size
+        x = self.canvas.winfo_rootx() + rx + rw - popup_w
+        y = self.canvas.winfo_rooty() + ry + rh + self._s(_POPUP_GAP)
+        self._lang_popup.geometry(f"{popup_w}x{popup_h}+{x}+{y}")
+
+    def _lift_lang_popup(self) -> None:
+        """Lift the popup back above our window.
+
+        overrideredirect drops the owner that ``transient`` sets, so nothing
+        else keeps it in front of the main window it partly overlaps.
+        """
+        if self._lang_popup is not None:
+            self._lang_popup.lift()
+
+    def _on_root_configure(self, event: tk.Event) -> None:
+        """Keep the popup glued to the window while that is dragged.
+
+        A Toplevel does not follow its master on Windows, and child widgets
+        raise <Configure> too - hence the widget check.
+        """
+        if event.widget is self.app.root:
+            self._place_lang_popup()
+            self._lift_lang_popup()
+
+    def _on_root_focus_in(self, _event: tk.Event) -> None:
+        """Our window came forward; the popup goes back in front of it."""
+        self._lift_lang_popup()
+
+    def _on_lang_outside_click(self, event: tk.Event) -> None:
+        """Close the dropdown on a click that missed it and the selector.
+
+        Clicks inside the popup never get here - it is a separate window.
+        """
+        if self._lang_popup is None or self._lang_anchor is None:
+            return
+        rx, ry, rw, rh = self._lang_anchor
+        selector = (
+            self.canvas.winfo_rootx() + rx, self.canvas.winfo_rooty() + ry, rw, rh,
+        )
+        if _inside(selector, event.x_root, event.y_root):
+            return
+        self._close_lang_popup()
 
     def _open_i18n_folder(self) -> None:
         """Open i18n/ in the file manager; refresh language list on refocus."""
@@ -225,6 +284,12 @@ class SettingsScreen(tk.Frame):
         self._show_lang_popup(rx, ry, rw, rh)
 
     def _show_lang_popup(self, rx: int, ry: int, rw: int, rh: int) -> None:
+        """Open the language list as its own window, hung under the selector.
+
+        The canvas cannot draw it - a list this tall is clipped at the window
+        edge - and it is positioned while still hidden, or it would flash at the
+        screen origin for a frame.
+        """
         languages = get_i18n().available_languages()
         if not languages:
             return
@@ -237,49 +302,47 @@ class SettingsScreen(tk.Frame):
         popup_h = pad * 2 + len(languages) * item_h + max(0, len(languages) - 1) * item_gap
 
         popup = tk.Toplevel(self.app.root)
+        popup.withdraw()                    # hidden until it has a position
         popup.overrideredirect(True)
+        popup.transient(self.app.root)
         popup.configure(bg=rgb_hex("buttons_active"))
-        popup.attributes("-topmost", True)
-
-        screen_x = self.canvas.winfo_rootx() + rx + rw - popup_w
-        screen_y = self.canvas.winfo_rooty() + ry + rh + 2
-        popup.geometry(f"{popup_w}x{popup_h}+{screen_x}+{screen_y}")
 
         inner = tk.Frame(popup, bg=rgb_hex("background"), padx=pad, pady=pad)
         inner.pack(fill="both", expand=True)
 
         popup_font = gui_font(self.app.settings, self._s(SL.SETTINGS_STATE_FONT), "normal")
+        margin = self._s(SL.SETTINGS_ROW_MARGIN)
+        last = len(languages) - 1
 
-        for lang_code, display in languages.items():
+        for index, (lang_code, display) in enumerate(languages.items()):
             active = lang_code == current
             bg = rgb_hex("buttons_active") if active else rgb_hex("range_buttons")
-            fg = rgb_hex("text_primary")
             row = tk.Frame(inner, bg=bg, height=item_h)
-            row.pack(fill="x", pady=(0, item_gap))
+            # No gap under the last row - popup_h above counts n-1 of them.
+            row.pack(fill="x", pady=(0, 0 if index == last else item_gap))
             row.pack_propagate(False)
 
             lbl = tk.Label(
-                row, text=display, bg=bg, fg=fg, anchor="w",
-                font=popup_font, padx=self._s(SL.SETTINGS_ROW_MARGIN),
+                row, text=display, bg=bg, fg=rgb_hex("text_primary"), anchor="w",
+                font=popup_font, padx=margin,
             )
             lbl.pack(fill="both", expand=True)
-
-            def on_pick(_event=None, code=lang_code):
-                self._select_language(code)
 
             def paint(hex_color: str, r=row, l=lbl) -> None:
                 r.configure(bg=hex_color)
                 l.configure(bg=hex_color)
 
-            # Every default here captures the current pass: paint is rebound on
-            # each iteration, so a free reference would make any row repaint the
-            # last one instead of itself.
-            def on_enter(_event=None, active=active, hover=rgb_hex("buttons_hover"), paint=paint):
-                if not active:          # the selected row keeps its blue
-                    paint(hover)
+            def on_pick(_event=None, code=lang_code):
+                self._select_language(code)
 
-            def on_leave(_event=None, restore=bg, paint=paint):
-                paint(restore)
+            # Defaults capture each pass: paint is rebound every iteration.
+            def on_enter(_event=None, is_active=active, hover=rgb_hex("buttons_hover"),
+                         repaint=paint):
+                if not is_active:       # the selected row keeps its blue
+                    repaint(hover)
+
+            def on_leave(_event=None, restore=bg, repaint=paint):
+                repaint(restore)
 
             for widget in (row, lbl):
                 widget.bind("<Button-1>", on_pick)
@@ -287,25 +350,21 @@ class SettingsScreen(tk.Frame):
                 widget.bind("<Leave>", on_leave)
 
         self._lang_popup = popup
+        self._lang_anchor = (rx, ry, rw, rh)
+        self._lang_size = (popup_w, popup_h)
+        self._place_lang_popup()
+        popup.deiconify()                   # positioned - showing it now is safe
+        popup.lift()                        # and above our own window
 
-        def dismiss(event: tk.Event) -> None:
-            if self._lang_popup is None:
-                return
-            try:
-                wx, wy = event.x_root, event.y_root
-                px, py = self._lang_popup.winfo_rootx(), self._lang_popup.winfo_rooty()
-                pw, ph = self._lang_popup.winfo_width(), self._lang_popup.winfo_height()
-                inside_popup = px <= wx <= px + pw and py <= wy <= py + ph
-                inside_selector = (
-                    self.canvas.winfo_rootx() + rx <= wx <= self.canvas.winfo_rootx() + rx + rw
-                    and self.canvas.winfo_rooty() + ry <= wy <= self.canvas.winfo_rooty() + ry + rh
-                )
-                if not inside_popup and not inside_selector:
-                    self._close_lang_popup()
-            except tk.TclError:
-                self._close_lang_popup()
-
-        self._lang_popup_dismiss_bind = self.app.root.bind("<Button-1>", dismiss, add="+")
+        root = self.app.root
+        self._lang_binds = [
+            (seq, root.bind(seq, handler, add="+"))
+            for seq, handler in (
+                ("<Configure>", self._on_root_configure),
+                ("<FocusIn>", self._on_root_focus_in),
+                ("<Button-1>", self._on_lang_outside_click),
+            )
+        ]
 
     def _place_language_row(
         self, x: int, y: int, w: int, h: int, key: str, label: str,

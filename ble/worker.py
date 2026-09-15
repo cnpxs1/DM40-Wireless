@@ -2,6 +2,7 @@
 
 import asyncio
 import threading
+import traceback
 from dataclasses import dataclass
 from typing import Callable
 
@@ -73,28 +74,29 @@ class BleWorker:
     def send_range_flag(self, flag: int) -> None:
         self.send_packet(make_range_cmd(flag))
 
-    def disconnect(self, *, wait: float = 0.0) -> None:
-        """Drop the link now and stay down until resume().
+    def disconnect(self) -> None:
+        """Stop the loop and stay down until resume().
 
-        _ble_loop would otherwise reconnect straight away. ``wait`` > 0 blocks
-        the caller until the disconnect completes - used on exit, so the link
-        is really gone before the process ends and the meter stops waiting.
+        The disconnect itself is left to ``BleakClient.__aexit__``. Calling
+        ``client.disconnect()`` here as well makes Bleak run it twice, and on
+        the WinRT backend the second pass iterates a services list that the
+        first pass already cleared (TypeError: 'NoneType' object is not
+        iterable) - which the loop then reports as a connection error.
+
+        This returns immediately; callers that need to wait for the link to go
+        down must poll ``connected`` - and while doing so they have to keep
+        pumping Tk events. The BLE thread posts every measurement through
+        ``root.after()``, and that call blocks until the main thread services
+        it, so a plain sleep() here would freeze the very loop we are waiting
+        on. See ``DM40App.on_close``.
         """
         self._paused = True
-        client, loop = self._client, self._loop
-        if client is None or loop is None or not client.is_connected:
-            return
-        # Wake the poll wait so the loop sees _paused right away instead of
-        # sitting out the rest of its response timeout.
         ready = self._poll_ready
-        if ready is not None:
+        loop = self._loop
+        if ready is not None and loop is not None:
+            # Wake the poll wait so the loop reaches its `_paused` check now
+            # rather than finishing its response timeout first.
             loop.call_soon_threadsafe(ready.set)
-        future = asyncio.run_coroutine_threadsafe(client.disconnect(), loop)
-        if wait > 0:
-            try:
-                future.result(timeout=wait)
-            except Exception:
-                pass
 
     def resume(self) -> None:
         """Let _ble_loop connect again - called once a device has been picked."""
@@ -180,6 +182,7 @@ class BleWorker:
                 # so the D-Bus error type survives.
                 print(t("ble.console_disconnected",
                         error=str(exc) or type(exc).__name__))
+                traceback.print_exc()
                 self._client = None
                 self._ble_lock = None
                 if exception_indicates_bt_off(exc):

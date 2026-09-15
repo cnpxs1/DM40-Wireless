@@ -11,6 +11,7 @@ from core.i18n import t, get_i18n
 from gui import layout as display_layout
 from core.modes import MODE_CYCLE_GROUPS, ModeState
 from core.parsing import MODEL, range_label_from_packet
+from gui.confirm_dialog import cancel_pending
 from gui.main_screen import MainScreen
 from gui.range_screen import RangeScreen
 from gui.raw_console import RawConsole
@@ -137,8 +138,20 @@ class DM40App:
         """Hand the link back before the process goes away.
 
         Without this the meter keeps waiting for a host that is already gone.
+
+        The wait below pumps Tk events on purpose. The BLE thread delivers each
+        measurement via ``root.after()``, which blocks until the main thread
+        services it - so sleeping here would stall that thread, the BLE loop
+        would never reach its `_paused` check, and the link would never drop.
         """
-        self.ble.disconnect(wait=2.0)
+        # An open dialog is waiting in wait_variable, which never returns once
+        # the window is gone - answer it first or the process hangs here.
+        cancel_pending()
+        self.ble.disconnect()
+        deadline = time.monotonic() + 2.0
+        while self.ble.connected and time.monotonic() < deadline:
+            self.root.update()          # not sleep(): the BLE thread is waiting on us
+            time.sleep(0.02)
         self.root.destroy()
 
     def reload_language(self, lang_code: str) -> None:

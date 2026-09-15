@@ -16,7 +16,7 @@ from core.modes import MODE_CYCLE_GROUPS
 from core.parsing import MODEL
 from gui import layout as L
 from gui.assets import CLICK_HOTSPOT_TAG, HoverGroup, bind_clickable, raise_click_hotspots
-from gui.confirm_dialog import ask_confirm
+from gui.confirm_dialog import ask_confirm, raise_overlay
 from gui.display_debug import clear_display_debug, draw_debug_rect
 from gui.sprites import SpriteCache, main_unit_filename
 from gui.fonts import gui_font
@@ -80,6 +80,7 @@ class MainScreen(tk.Frame):
         self._raise_visual_layers()
         raise_click_hotspots(self.canvas)
         self.canvas.tag_raise("graph_hit_rel")
+        raise_overlay(self.canvas)          # a dialog, if one is open, stays on top
 
     def _raise_visual_layers(self) -> None:
         """Graph below MODE row; click zones handled in raise_click_layer."""
@@ -410,7 +411,7 @@ class MainScreen(tk.Frame):
         if self._ble_state != "connected":
             return
         if ask_confirm(
-            self.app.root, self.sprites, self.app.settings,
+            self.canvas, self.sprites, self.app.settings,
             title=t("main.disconnect_title"),
             message=t("main.disconnect_ask"),
             yes_text=t("main.disconnect_yes"),
