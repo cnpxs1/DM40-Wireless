@@ -27,6 +27,23 @@ def _inside(box: tuple[int, int, int, int], x: int, y: int) -> bool:
     return bx <= x < bx + bw and by <= y < by + bh
 
 
+def _make_borderless(popup: tk.Toplevel) -> None:
+    """Drop the title bar without asking to be pinned over everything.
+
+    mutter puts override-redirect windows - and menu, popup_menu, tooltip,
+    notification, combo and dnd window types with them - in its topmost layer,
+    above every other application. toolbar is the one type hint that stays
+    borderless and in the normal layer, so other applications can cover it.
+    """
+    if sys.platform == "win32":
+        popup.overrideredirect(True)        # Windows has no EWMH type hints
+        return
+    try:
+        popup.attributes("-type", "toolbar")
+    except tk.TclError:                     # window manager without type hints
+        popup.overrideredirect(True)
+
+
 def _reveal_in_file_manager(path: str) -> None:
     """Open a folder in the platform's file manager. Never raises.
 
@@ -303,7 +320,7 @@ class SettingsScreen(tk.Frame):
 
         popup = tk.Toplevel(self.app.root)
         popup.withdraw()                    # hidden until it has a position
-        popup.overrideredirect(True)
+        _make_borderless(popup)
         popup.transient(self.app.root)
         popup.configure(bg=rgb_hex("buttons_active"))
 
