@@ -15,7 +15,15 @@ from gui.confirm_dialog import cancel_pending
 from gui.main_screen import MainScreen
 from gui.range_screen import RangeScreen
 from gui.raw_console import RawConsole
-from gui.settings import load_settings, apply_saved_model, save_settings, persist_device
+from gui.settings import (
+    apply_saved_model,
+    as_text,
+    load_settings,
+    persist_device,
+    resolve_window_scale,
+    sanitize_settings,
+    save_settings,
+)
 from gui.connect_screen import ConnectScreen
 from gui.settings_screen import SettingsScreen
 from gui.theme import rgb_hex
@@ -28,16 +36,18 @@ class DM40App:
     def __init__(self, root: tk.Tk) -> None:
         self.root = root
         self.settings = load_settings()
+        if sanitize_settings(self.settings):
+            save_settings(self.settings)    # persist the repaired values
         apply_saved_model(self.settings)
 
         # Initialize i18n from language in settings.json
-        lang = (self.settings.get("language") or "").strip() or "en-US"
+        lang = as_text(self.settings.get("language")) or "en-US"
         i18n = get_i18n()
         i18n.init(lang)
         if i18n.language and i18n.language != lang:
             self.settings["language"] = i18n.language
             save_settings(self.settings)
-        self.scale = float(self.settings.get("window_scale", 1.0))
+        self.scale = resolve_window_scale(self.settings)
         self.mode_state = ModeState()
         for gid, opts in MODE_CYCLE_GROUPS:
             self.mode_state.register_group(gid, opts)
@@ -84,7 +94,7 @@ class DM40App:
             on_measurement=self._on_measurement,
             on_raw_traffic=self._on_raw_traffic,
         )
-        self.ble = BleWorker(cbs, target_mac=self.settings.get("target_mac", ""))
+        self.ble = BleWorker(cbs, target_mac=as_text(self.settings.get("target_mac")))
 
         self.main_screen = MainScreen(self.container, self, self.scale)
         self.range_screen = RangeScreen(self.container, self, self.scale)
@@ -107,7 +117,7 @@ class DM40App:
             self._ble_started = True
 
     def _needs_device_setup(self) -> bool:
-        return not (self.settings.get("target_mac") or "").strip()
+        return not as_text(self.settings.get("target_mac"))
 
     def complete_device_setup(self, device) -> None:
         from core.parsing import apply_model

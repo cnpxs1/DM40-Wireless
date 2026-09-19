@@ -1,12 +1,14 @@
 """GUI font family from settings.json (default Arial for consistent Windows rendering)."""
 
+from gui.settings import as_text
+
 DEFAULT_GUI_FONT = "Arial"
 
 
 def gui_font_family(settings: dict | None = None) -> str:
     """Return configured GUI font family."""
     if settings:
-        name = (settings.get("gui_font") or "").strip()
+        name = as_text(settings.get("gui_font"))
         if name:
             return name
     return DEFAULT_GUI_FONT

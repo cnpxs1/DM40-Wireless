@@ -1,12 +1,16 @@
 """Load / save settings.json."""
 
 import json
+import math
+import re
 from copy import deepcopy
+from typing import Any
 
 from core.config import SETTINGS_PATH
 from core.parsing import MODEL, apply_model
+from core.protocol_constants import MODEL_TABLE
 
-DEFAULTS = {
+DEFAULTS: dict[str, Any] = {
     "target_mac": "",
     "model_name": "",
     "device_counts": 0,
@@ -22,10 +26,110 @@ DEFAULTS = {
 }
 
 
+# Hand-edited settings.json can hold the wrong type or an out-of-range number;
+# reading one must never raise, or the packaged build (no console) dies silently.
+MIN_WINDOW_SCALE = 0.5
+
+# Repaired by type alone; target_mac, model_name and device_counts have their own
+# rules below. The bool settings are absent - bool() never fails on any value.
+_TEXT_KEYS = ("language", "gui_font")
+
+# Six colon-separated hex pairs - Windows and BlueZ report the same form, so one
+# pattern covers both. Dashes are accepted for hand-edited files.
+_MAC_PATTERN = re.compile(r"^[0-9A-F]{2}([:-][0-9A-F]{2}){5}$", re.IGNORECASE)
+
+
+def as_text(value: Any, default: str = "") -> str:
+    """``value`` stripped when it is a string, else ``default``."""
+    return value.strip() if isinstance(value, str) else default
+
+
+def as_int(value: Any, default: int = 0) -> int:
+    """``int(value)`` when that works, else ``default``."""
+    try:
+        return int(value)
+    except (TypeError, ValueError, OverflowError):
+        return default
+
+
+def resolve_window_scale(settings: dict) -> float:
+    """Window scale to use - always finite and large enough to be clickable.
+
+    Not only a type check: json.loads accepts NaN/Infinity, and 0 or a negative
+    scales the window away without raising until the geometry call.
+    """
+    try:
+        value = float(settings.get("window_scale", 1.0))
+    except (TypeError, ValueError):
+        return 1.0
+    if not math.isfinite(value) or value < MIN_WINDOW_SCALE:
+        return 1.0
+    return value
+
+
+def is_valid_mac(value: str) -> bool:
+    """True when ``value`` is an address a BLE stack can act on."""
+    return bool(_MAC_PATTERN.match(value))
+
+
+def resolve_model_name(value: Any) -> str:
+    """Canonical spelling of a known model, or "" when it names none.
+
+    Case is ignored, so "dm40a" is repaired rather than dropped.
+    """
+    name = as_text(value).upper()
+    for model_name, _counts in MODEL_TABLE:
+        if model_name.upper() == name:
+            return model_name
+    return ""
+
+
+def model_device_counts(model_name: str) -> int:
+    """Full-scale counts of a known model; 0 for an unknown one."""
+    for name, counts in MODEL_TABLE:
+        if name == model_name:
+            return counts
+    return 0
+
+
+def sanitize_settings(settings: dict) -> bool:
+    """Replace unusable values with their defaults, in place; True if changed.
+
+    Repairing the file, not just the in-memory copy, leaves the next start clean
+    and shows the user which value was rejected.
+    """
+    fixed: dict[str, Any] = {
+        key: as_text(settings[key], DEFAULTS[key]) for key in _TEXT_KEYS if key in settings
+    }
+
+    if "target_mac" in settings:
+        # A malformed address fails every connect and keeps DM40App from ever
+        # showing device setup - dropping it returns the user to the scan screen.
+        mac = as_text(settings["target_mac"])
+        fixed["target_mac"] = mac if is_valid_mac(mac) else ""
+
+    if "model_name" in settings:
+        # The model is what decides the counts, so the pair is repaired together.
+        model = resolve_model_name(settings["model_name"])
+        fixed["model_name"] = model
+        fixed["device_counts"] = model_device_counts(model)
+    elif "device_counts" in settings:
+        fixed["device_counts"] = as_int(
+            settings["device_counts"], DEFAULTS["device_counts"],
+        )
+
+    if "window_scale" in settings:
+        fixed["window_scale"] = resolve_window_scale(settings)
+
+    changed = any(settings.get(key) != value for key, value in fixed.items())
+    settings.update(fixed)
+    return changed
+
+
 def apply_saved_model(settings: dict) -> None:
     """Loads the saved multimeter model (RANGE counts) before connecting."""
-    name = (settings.get("model_name") or "").strip()
-    counts = int(settings.get("device_counts") or 0)
+    name = as_text(settings.get("model_name"))
+    counts = as_int(settings.get("device_counts"))
     if name and counts > 0:
         apply_model(name, counts)
 

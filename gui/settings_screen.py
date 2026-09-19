@@ -12,7 +12,7 @@ from core.i18n import t, get_i18n, i18n_dir
 from gui import layout as L
 from gui import settings_layout as SL
 from gui.assets import bind_clickable, raise_click_hotspots
-from gui.settings import save_settings
+from gui.settings import as_text, save_settings
 from gui.sprites import SpriteCache
 from gui.fonts import gui_font
 from gui.theme import rgb_hex
@@ -290,7 +290,7 @@ class SettingsScreen(tk.Frame):
             self._folder_focus_bind = None
 
     def _select_language(self, lang_code: str) -> None:
-        current = (self.app.settings.get("language") or "").strip() or "en-US"
+        current = as_text(self.app.settings.get("language")) or "en-US"
         self._close_lang_popup()
         if lang_code == current:
             return
@@ -313,7 +313,7 @@ class SettingsScreen(tk.Frame):
         if not languages:
             return
 
-        current = (self.app.settings.get("language") or "").strip() or "en-US"
+        current = as_text(self.app.settings.get("language")) or "en-US"
         pad = self._s(SL.LANGUAGE_POPUP_PAD)
         item_h = self._s(SL.LANGUAGE_ITEM_H)
         item_gap = self._s(SL.LANGUAGE_ITEM_GAP)
@@ -432,7 +432,7 @@ class SettingsScreen(tk.Frame):
         else:
             selector_right = rx + rw - pad_r
 
-        lang_code = (self.app.settings.get("language") or "").strip() or "en-US"
+        lang_code = as_text(self.app.settings.get("language")) or "en-US"
         display = get_i18n().available_languages().get(lang_code, lang_code)
         selector_left = rx + self._s(120)
         selector_top = ry + self._s(6)
