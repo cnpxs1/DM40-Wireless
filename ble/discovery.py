@@ -34,10 +34,16 @@ async def scan_dm40_devices(*, timeout: float = 10.0) -> list[DM40Device]:
     found: dict[str, DM40Device] = {}
     try:
         discovered = await BleakScanner.discover(timeout=timeout, return_adv=True)
-        items = discovered.items()
-    except TypeError:
+    except TypeError as exc:
+        # Only "an old bleak does not know this argument" may fall back. Any
+        # other TypeError is a real failure - treating it as an API mismatch
+        # would buy a whole extra scan before the same error surfaced anyway.
+        if "return_adv" not in str(exc):
+            raise
         devices = await BleakScanner.discover(timeout=timeout)
         items = ((d.address, (d, None)) for d in devices)
+    else:
+        items = discovered.items()
 
     for address, (device, adv) in items:
         name = device.name or (getattr(adv, "local_name", None) if adv else None) or ""

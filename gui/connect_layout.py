@@ -16,6 +16,7 @@ SETUP_ROW_GAP = 4
 SETUP_ROW_FONT = 12
 SETUP_ROW_PAD_LEFT = 10
 SETUP_BTN_COUNT = 2
+SETUP_SCROLLBAR_W = 11   # matches the arrowsize make_scrollbar() gives the trough
 
 
 def setup_btn_labels() -> tuple[str, str]:
@@ -26,6 +27,16 @@ def setup_btn_labels() -> tuple[str, str]:
 
 def setup_list_bottom() -> int:
     return MODE_BTN_Y - 8
+
+
+def setup_visible_rows() -> int:
+    """How many device rows fit in the list area without being clipped.
+
+    Adding the gap back covers the missing one after the last row, so the count
+    matches what a plain "does the next row still fit" loop would draw.
+    """
+    stride = SETUP_ROW_H + SETUP_ROW_GAP
+    return max(1, (setup_list_bottom() - SETUP_LIST_TOP + SETUP_ROW_GAP) // stride)
 
 
 def setup_button_slots() -> list[tuple[int, int, int, int]]:

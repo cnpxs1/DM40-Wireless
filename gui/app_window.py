@@ -1,5 +1,6 @@
 """Main application window – Main / Range / Settings screen switching."""
 
+import threading
 import time
 
 import tkinter as tk
@@ -83,6 +84,7 @@ class DM40App:
         self._raw_poll_after: str | None = None
         self._meas_pending: tuple[Measurement, bytes] | None = None
         self._meas_scheduled = False
+        self._meas_lock = threading.Lock()   # guards the two fields above
         self._ble_started = False
 
         cbs = BleCallbacks(
@@ -401,17 +403,27 @@ class DM40App:
         )
 
     def _on_measurement(self, m, data: bytes) -> None:
-        self._meas_pending = (m, data)
-        if not self._meas_scheduled:
+        """BLE thread: keep only the newest frame, and wake the UI just once.
+
+        Runs on another thread than the flush below, so the swap is guarded -
+        and only the newest frame is kept on purpose: the display is slower than
+        the poll, and a backlog would show readings the meter already replaced.
+        """
+        with self._meas_lock:
+            self._meas_pending = (m, data)
+            if self._meas_scheduled:
+                return
             self._meas_scheduled = True
-            self.root.after(0, self._flush_measurement)
+        self.root.after(0, self._flush_measurement)
 
     def _flush_measurement(self) -> None:
-        self._meas_scheduled = False
-        pending = self._meas_pending
+        # Taking the frame and clearing the slot is one step: split in two, a
+        # frame arriving in between would be erased by the clear and never shown.
+        with self._meas_lock:
+            self._meas_scheduled = False
+            pending, self._meas_pending = self._meas_pending, None
         if pending is None:
             return
-        self._meas_pending = None
         m, data = pending
         if len(data) > 5:
             self._last_range_flag = data[5]

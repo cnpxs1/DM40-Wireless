@@ -4,8 +4,10 @@ from pathlib import Path
 from typing import Callable
 
 import tkinter as tk
+from tkinter import ttk
 
 from core.config import IMAGES_DIR
+from gui.theme import rgb_hex
 
 CLICK_HOTSPOT_TAG = "click_hotspot"
 
@@ -64,6 +66,39 @@ def bind_clickable(
 def raise_click_hotspots(canvas: tk.Canvas) -> None:
     """Raise click layer on top – transparent PNG otherwise swallows clicks."""
     canvas.tag_raise(CLICK_HOTSPOT_TAG)
+
+
+def make_scrollbar(master: tk.Misc, scale: float) -> ttk.Scrollbar:
+    """Vertical scrollbar coloured through the 'clam' theme.
+
+    The classic tk.Scrollbar cannot be coloured cross-platform: Windows draws it
+    with the native theme engine, which discards bg/troughcolor, so the same
+    options come out flat on X11 and system-styled on Windows. clam is the
+    built-in theme that honours them on both. Width follows arrowsize - clam
+    sizes the trough from its arrow elements.
+    """
+    style = ttk.Style(master)
+    style.theme_use("clam")
+    trough = rgb_hex("top_bar_background")
+    thumb = rgb_hex("buttons")
+    hover = rgb_hex("graph_grid")
+    style.configure(
+        "Vertical.TScrollbar",
+        background=thumb,
+        troughcolor=trough,
+        bordercolor=trough,
+        lightcolor=thumb,   # same as the thumb -> flat, no 3D bevel
+        darkcolor=thumb,
+        arrowcolor=rgb_hex("text_secondary"),
+        arrowsize=max(10, int(11 * scale)),   # clam sizes the trough from this
+    )
+    style.map(
+        "Vertical.TScrollbar",
+        background=[("active", hover)],
+        lightcolor=[("active", hover)],
+        darkcolor=[("active", hover)],
+    )
+    return ttk.Scrollbar(master, orient="vertical", style="Vertical.TScrollbar")
 
 
 class HoverGroup:

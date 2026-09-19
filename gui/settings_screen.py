@@ -11,7 +11,7 @@ from core.config import SCREEN_HEIGHT, SCREEN_WIDTH
 from core.i18n import t, get_i18n, i18n_dir
 from gui import layout as L
 from gui import settings_layout as SL
-from gui.assets import bind_clickable, raise_click_hotspots
+from gui.assets import bind_clickable, make_scrollbar, raise_click_hotspots
 from gui.settings import as_text, save_settings
 from gui.sprites import SpriteCache
 from gui.fonts import gui_font
@@ -318,7 +318,12 @@ class SettingsScreen(tk.Frame):
         item_h = self._s(SL.LANGUAGE_ITEM_H)
         item_gap = self._s(SL.LANGUAGE_ITEM_GAP)
         popup_w = max(rw, self._s(180))
-        popup_h = pad * 2 + len(languages) * item_h + max(0, len(languages) - 1) * item_gap
+        # A longer list scrolls rather than growing - past the visible limit the
+        # popup would simply run off the bottom of the screen.
+        shown = min(len(languages), SL.LANGUAGE_MAX_VISIBLE)
+        list_h = shown * item_h + max(0, shown - 1) * item_gap
+        content_h = len(languages) * item_h + max(0, len(languages) - 1) * item_gap
+        popup_h = pad * 2 + list_h
 
         popup = tk.Toplevel(self.app.root)
         popup.withdraw()                    # hidden until it has a position
@@ -330,8 +335,45 @@ class SettingsScreen(tk.Frame):
         popup.attributes("-topmost", bool(self.app.root.attributes("-topmost")))
         popup.configure(bg=rgb_hex("buttons_active"))
 
-        inner = tk.Frame(popup, bg=rgb_hex("background"), padx=pad, pady=pad)
-        inner.pack(fill="both", expand=True)
+        body = tk.Frame(popup, bg=rgb_hex("background"), padx=pad, pady=pad)
+        body.pack(fill="both", expand=True)
+
+        scrolling = len(languages) > SL.LANGUAGE_MAX_VISIBLE
+        bar = make_scrollbar(body, self.scale) if scrolling else None
+        if bar is not None:
+            bar.pack(side="right", fill="y")
+
+        list_canvas = tk.Canvas(
+            body, bg=rgb_hex("background"), highlightthickness=0, borderwidth=0,
+            height=list_h, width=popup_w - 2 * pad,
+        )
+        list_canvas.pack(side="left", fill="both", expand=True)
+
+        inner = tk.Frame(list_canvas, bg=rgb_hex("background"))
+        inner_id = list_canvas.create_window((0, 0), window=inner, anchor="nw")
+        list_canvas.configure(scrollregion=(0, 0, popup_w, content_h))
+        list_canvas.bind(
+            "<Configure>",
+            lambda event: list_canvas.itemconfigure(inner_id, width=event.width),
+        )
+        if bar is not None:
+            bar.config(command=list_canvas.yview)
+            list_canvas.configure(yscrollcommand=bar.set)
+
+        def on_wheel(event) -> None:
+            """Tk sends the wheel to the widget under the pointer, never to the
+            canvas that scrolls, so every widget down here carries this."""
+            if event.num == 4:
+                step = -1
+            elif event.num == 5:
+                step = 1
+            else:
+                step = -1 if event.delta > 0 else 1
+            list_canvas.yview_scroll(step, "units")
+
+        for container in (popup, list_canvas, inner):
+            for sequence in ("<MouseWheel>", "<Button-4>", "<Button-5>"):
+                container.bind(sequence, on_wheel, add="+")
 
         popup_font = gui_font(self.app.settings, self._s(SL.SETTINGS_STATE_FONT), "normal")
         margin = self._s(SL.SETTINGS_ROW_MARGIN)
@@ -371,6 +413,8 @@ class SettingsScreen(tk.Frame):
                 widget.bind("<Button-1>", on_pick)
                 widget.bind("<Enter>", on_enter)
                 widget.bind("<Leave>", on_leave)
+                for sequence in ("<MouseWheel>", "<Button-4>", "<Button-5>"):
+                    widget.bind(sequence, on_wheel, add="+")
 
         self._lang_popup = popup
         self._lang_anchor = (rx, ry, rw, rh)

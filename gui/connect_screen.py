@@ -12,7 +12,7 @@ from core.config import SCREEN_HEIGHT, SCREEN_WIDTH
 from core.i18n import t
 from gui import connect_layout as CL
 from gui import layout as L
-from gui.assets import bind_clickable, raise_click_hotspots
+from gui.assets import bind_clickable, make_scrollbar, raise_click_hotspots
 from gui.sprites import SpriteCache
 from gui.fonts import gui_font
 from gui.theme import rgb_hex
@@ -33,6 +33,7 @@ class ConnectScreen(tk.Frame):
 
         self._devices: list[DM40Device] = []
         self._selected = -1
+        self._list_offset = 0               # first device row on screen
         self._scanning = False
         self._scan_queue: queue.Queue = queue.Queue()
         self._sprite_ids: dict[str, int] = {}
@@ -40,6 +41,11 @@ class ConnectScreen(tk.Frame):
         self._ble_pulse_after: str | None = None
         self._status_id: int | None = None
         self._connect_btn_bg_ids: dict[int, int] = {}
+
+        self._list_scroll = make_scrollbar(self.canvas, scale)
+        self._list_scroll.config(command=self._on_list_scroll)
+        for sequence in ("<MouseWheel>", "<Button-4>", "<Button-5>"):
+            self.canvas.bind(sequence, self._on_list_wheel, add="+")
 
         self._draw_chrome()
         self._draw_bottom_buttons()
@@ -222,6 +228,7 @@ class ConnectScreen(tk.Frame):
         self._scanning = True
         self._devices = []
         self._selected = -1
+        self._list_offset = 0
         self.canvas.delete("connect_row")
         self._set_status(t("setup.status_scanning"))
         self._start_bt_pulse()
@@ -264,40 +271,101 @@ class ConnectScreen(tk.Frame):
 
     def _rebuild_device_list(self) -> None:
         self.canvas.delete("connect_row")
+        visible = CL.setup_visible_rows()
+        count = len(self._devices)
+        self._list_offset = max(0, min(self._list_offset, max(0, count - visible)))
+        self._sync_list_scrollbar(visible)
         if not self._devices:
             self.raise_click_layer()
             return
 
         font = gui_font(self.app.settings, self._s(CL.SETUP_ROW_FONT), "normal")
         x = CL.SETUP_LIST_MARGIN
-        w = L.SCREEN_W - 2 * CL.SETUP_LIST_MARGIN
-        y = CL.SETUP_LIST_TOP
-        bottom = CL.setup_list_bottom()
+        # The bar sits inside the list area, so the rows give up its width.
+        bar_w = CL.SETUP_SCROLLBAR_W if count > visible else 0
+        w = L.SCREEN_W - 2 * CL.SETUP_LIST_MARGIN - bar_w
         row_h = CL.SETUP_ROW_H + CL.SETUP_ROW_GAP
 
-        for i, dev in enumerate(self._devices):
-            if y + CL.SETUP_ROW_H > bottom:
+        for slot in range(visible):
+            index = self._list_offset + slot
+            if index >= count:
                 break
-            active = i == self._selected
+            dev = self._devices[index]
+            y = CL.SETUP_LIST_TOP + slot * row_h
+            active = index == self._selected
             rx, ry, rw, rh = self._s(x), self._s(y), self._s(w), self._s(CL.SETUP_ROW_H)
             bg = "buttons_active" if active else "range_buttons"
             self.canvas.create_rectangle(
                 rx, ry, rx + rw, ry + rh,
-                fill=rgb_hex(bg), outline="", tags=("connect_row", f"connect_row_{i}"),
+                fill=rgb_hex(bg), outline="", tags=("connect_row", f"connect_row_{slot}"),
             )
             self.canvas.create_text(
                 rx + self._s(CL.SETUP_ROW_PAD_LEFT), ry + rh // 2,
                 text=dev.list_label(), anchor="w", font=font,
-                fill=rgb_hex("text_primary"), tags=("connect_row", f"connect_txt_{i}"),
+                fill=rgb_hex("text_primary"), tags=("connect_row", f"connect_txt_{slot}"),
             )
+            # Tags follow the slot, so scrolling rebinds the same few hot areas;
+            # the device the click selects is still named by absolute index.
             bind_clickable(
                 self.canvas, rx, ry, rw, rh,
-                lambda idx=i: self._select_device(idx), tag=f"connect_row_hit_{i}",
+                lambda idx=index: self._select_device(idx), tag=f"connect_row_hit_{slot}",
                 group="connect_row",
             )
-            y += row_h
 
         self.raise_click_layer()
+
+    def _sync_list_scrollbar(self, visible: int) -> None:
+        """Show the bar only while devices overflow, parked at the list's right."""
+        count = len(self._devices)
+        if count <= visible:
+            self._list_scroll.place_forget()
+            return
+        self._list_scroll.place(
+            x=self._s(L.SCREEN_W - CL.SETUP_LIST_MARGIN - CL.SETUP_SCROLLBAR_W),
+            y=self._s(CL.SETUP_LIST_TOP),
+            width=self._s(CL.SETUP_SCROLLBAR_W),
+            height=self._s(CL.setup_list_bottom() - CL.SETUP_LIST_TOP),
+        )
+        self._list_scroll.set(
+            self._list_offset / count, (self._list_offset + visible) / count,
+        )
+
+    def _set_list_offset(self, offset: int) -> None:
+        visible = CL.setup_visible_rows()
+        offset = max(0, min(offset, max(0, len(self._devices) - visible)))
+        if offset == self._list_offset:
+            return
+        self._list_offset = offset
+        self._rebuild_device_list()
+
+    def _on_list_scroll(self, *args) -> None:
+        """Scrollbar protocol: ("moveto", frac) or ("scroll", n, "units"|"pages")."""
+        if not self._devices or not args:
+            return
+        if args[0] == "moveto":
+            offset = round(float(args[1]) * len(self._devices))
+        elif args[0] == "scroll":
+            step = int(args[1])
+            if len(args) > 2 and args[2] == "pages":
+                step *= CL.setup_visible_rows()
+            offset = self._list_offset + step
+        else:
+            return
+        self._set_list_offset(offset)
+
+    def _on_list_wheel(self, event) -> None:
+        """Wheel over the list scrolls it; over the rest of the screen it does not."""
+        if not self._devices:
+            return
+        if not self._s(CL.SETUP_LIST_TOP) <= event.y <= self._s(CL.setup_list_bottom()):
+            return
+        if event.num == 4:
+            step = -1
+        elif event.num == 5:
+            step = 1
+        else:
+            step = -1 if event.delta > 0 else 1
+        self._set_list_offset(self._list_offset + step)
 
     def _select_device(self, index: int) -> None:
         if index < 0 or index >= len(self._devices):

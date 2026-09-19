@@ -26,8 +26,9 @@ def _hwnd(root: tk.Tk) -> int | None:
     """The handle Tk actually draws in, or None when it cannot be resolved."""
     import ctypes
 
-    user32: Any = ctypes.windll.user32        # typeshed does not model windll
     with contextlib.suppress(Exception):
+        # windll exists on Windows only, and typeshed does not model it.
+        user32: Any = ctypes.windll.user32
         wid = root.winfo_id()
         if not wid:
             return None
@@ -39,8 +40,9 @@ def _set_dwm_attr(hwnd: int, attr: int, value: int) -> None:
     """Best effort - an older Windows build may not know the attribute."""
     import ctypes
 
-    dwmapi: Any = ctypes.windll.dwmapi        # typeshed does not model windll
     with contextlib.suppress(Exception):
+        # windll exists on Windows only, and typeshed does not model it.
+        dwmapi: Any = ctypes.windll.dwmapi
         dwmapi.DwmSetWindowAttribute(
             hwnd, attr, ctypes.byref(ctypes.c_int(value)), ctypes.sizeof(ctypes.c_int),
         )
