@@ -86,6 +86,7 @@ class ConnectScreen(tk.Frame):
         bind_clickable(
             self.canvas, self._s(sx), self._s(sy), self._s(sw), self._s(sh),
             self.app.show_settings_screen, tag="connect_hit_settings",
+            group="connect_chrome",
         )
 
     def _set_status(self, text: str) -> None:
@@ -182,6 +183,7 @@ class ConnectScreen(tk.Frame):
             cmd = self.start_scan if i == 0 else self._on_connect
             bind_clickable(
                 self.canvas, rx, ry, rw, rh, cmd, tag=hit_tag,
+                group="connect_btn",
             )
             self.canvas.tag_bind(hit_tag, "<Enter>", lambda _e, idx=i: self._set_connect_btn_hover(idx, True))
             self.canvas.tag_bind(hit_tag, "<Leave>", lambda _e, idx=i: self._set_connect_btn_hover(idx, False))
@@ -291,6 +293,7 @@ class ConnectScreen(tk.Frame):
             bind_clickable(
                 self.canvas, rx, ry, rw, rh,
                 lambda idx=i: self._select_device(idx), tag=f"connect_row_hit_{i}",
+                group="connect_row",
             )
             y += row_h
 

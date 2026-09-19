@@ -448,7 +448,9 @@ class MainScreen(tk.Frame):
             self.app.disconnect_device()
 
     def _clear_unit_sprites(self) -> None:
+        """Drop the icon and its cache key, so the same mode can redraw it."""
         self._hide_sprite("main_unit")
+        self._last_unit_key = None
 
     def _clear_aux_displays(self) -> None:
         self._aux_cache.clear()
@@ -570,8 +572,8 @@ class MainScreen(tk.Frame):
         unit_key = (kind, display_unit)
         if unit_key == self._last_unit_key:
             return
+        self._clear_unit_sprites()      # also invalidates the cache key
         self._last_unit_key = unit_key
-        self._clear_unit_sprites()
         fname = main_unit_filename(kind, display_unit)
         if fname:
             self._place_main_unit_sprite(fname)
@@ -649,8 +651,11 @@ class MainScreen(tk.Frame):
     def apply_view_mode(self, *, mini: bool, resize: bool = True) -> None:
         self._mini_mode = mini
         state = "hidden" if mini else "normal"
-        for tag in ("save_slot_bg", "save_slot", "graph", "hit_main_save"):
+        for tag in ("save_slot_bg", "save_slot", "hit_main_save"):
             self.canvas.itemconfigure(tag, state=state)
+        # The graph drives its own visibility: "graph" also tags the trace, which
+        # must stay hidden whenever the panel has no line to draw.
+        self._graph.set_view_mode_hidden(mini)
         if resize:
             logical = L.dm40_main_height(mini=mini)
             self.resize_to_logical_height(logical)
@@ -860,6 +865,14 @@ class MainScreen(tk.Frame):
 
         self.canvas.tag_bind("hit_main_save", "<ButtonPress-1>", on_press)
         self.canvas.tag_bind("hit_main_save", "<ButtonRelease-1>", on_release)
+        # A release that lands on another hotspot is delivered there and never
+        # reaches on_release above, so cancel both press timers canvas-wide.
+        self.canvas.bind("<ButtonRelease-1>", self._on_canvas_release, add="+")
+
+    def _on_canvas_release(self, _event) -> None:
+        """Button is up somewhere on this canvas: no hotspot keeps waiting."""
+        self._cancel_long_press()
+        self._graph.cancel_press()
 
     def refresh_all(self) -> None:
         """Rebuild all translatable text (called on language change)."""

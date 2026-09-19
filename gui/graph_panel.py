@@ -54,12 +54,17 @@ class GraphPanel:
         self._x_step = 1.0
         self._y_lo = 0.0
         self._y_hi = 1.0
+        # Two independent reasons to hide the trace: not enough samples to draw a
+        # line, and the panel being off screen (mini mode). Only their
+        # combination decides, so neither may be cached into the canvas alone.
         self._plot_visible = False
+        self._panel_hidden = False
 
-        self._rel_press_after: str | None = None
-        self._rel_press_fired = False
-        self._reset_press_after: str | None = None
-        self._reset_press_fired = False
+        # One press state shared by every hotspot: Tk delivers the release to
+        # whichever item is under the pointer, so the two cannot be independent.
+        self._press_tag: str | None = None
+        self._press_after: str | None = None
+        self._press_fired = False
         self._redraw_after: str | None = None
 
         self._bg_id: int | None = None
@@ -218,49 +223,36 @@ class GraphPanel:
         )
 
         def on_press(_event) -> None:
-            if tag == "graph_hit_reset":
-                self._reset_press_fired = False
-                if self._reset_press_after is not None:
-                    self._root.after_cancel(self._reset_press_after)
-                self._reset_press_after = self._root.after(
-                    L.GRAPH_LONG_PRESS_MS, _fire_long,
-                )
-            elif tag == "graph_hit_rel":
-                self._rel_press_fired = False
-                if self._rel_press_after is not None:
-                    self._root.after_cancel(self._rel_press_after)
-                self._rel_press_after = self._root.after(
-                    L.GRAPH_LONG_PRESS_MS, _fire_long,
-                )
+            self.cancel_press()         # a new press owns the interaction
+            self._press_tag = tag
+            self._press_after = self._root.after(L.GRAPH_LONG_PRESS_MS, _fire_long)
 
         def _fire_long() -> None:
-            if tag == "graph_hit_reset":
-                self._reset_press_fired = True
-                self._reset_press_after = None
-            else:
-                self._rel_press_fired = True
-                self._rel_press_after = None
+            self._press_after = None
+            self._press_fired = True
             if on_long:
                 on_long()
 
         def on_release(_event) -> None:
-            if tag == "graph_hit_reset":
-                if self._reset_press_after is not None:
-                    self._root.after_cancel(self._reset_press_after)
-                    self._reset_press_after = None
-                fired = self._reset_press_fired
-                self._reset_press_fired = False
-            else:
-                if self._rel_press_after is not None:
-                    self._root.after_cancel(self._rel_press_after)
-                    self._rel_press_after = None
-                fired = self._rel_press_fired
-                self._rel_press_fired = False
-            if not fired and on_click:
+            # A drag that started on the other hotspot arrives here with
+            # _press_tag still naming where it started. Cancel either way;
+            # the click only runs when press and release agree.
+            pressed = self._press_tag
+            fired = self._press_fired
+            self.cancel_press()
+            if pressed == tag and not fired and on_click:
                 on_click()
 
         self.canvas.tag_bind(tag, "<ButtonPress-1>", on_press)
         self.canvas.tag_bind(tag, "<ButtonRelease-1>", on_release)
+
+    def cancel_press(self) -> None:
+        """Drop the pending long press, whoever notices the interaction ended."""
+        if self._press_after is not None:
+            self._root.after_cancel(self._press_after)
+        self._press_after = None
+        self._press_fired = False
+        self._press_tag = None
 
     def refresh_rel_text(self) -> None:
         """Refresh REL button text (called on language change)."""
@@ -269,9 +261,16 @@ class GraphPanel:
             self.canvas.itemconfig(rid, text=t("graph.rel"))
 
     def clear(self) -> None:
+        """Drop the session trace: samples, MIN/MAX and all they drew.
+
+        The line's coordinates go too, and redraw() clears the scale labels -
+        hiding the line alone leaves the old shape one stray state change away.
+        """
         self._buf.clear()
         self._reset_min_max()
-        self._set_plot_visible(False)
+        if self._trace_id is not None:
+            self.canvas.coords(self._trace_id, 0, 0, 0, 0)
+        self.redraw()
 
     def _reset_min_max(self) -> None:
         self._session_min = None
@@ -357,13 +356,27 @@ class GraphPanel:
         return format_graph_scale_label(norm_value, self._axis_unit, self._decimals)
 
     def _set_plot_visible(self, visible: bool) -> None:
+        self._plot_visible = visible
+        self._sync_trace_state()
+
+    def _sync_trace_state(self) -> None:
+        """Recompute the trace state from both reasons - never cache it alone."""
         if self._trace_id is None:
             return
-        if self._plot_visible != visible:
-            self._plot_visible = visible
-            self.canvas.itemconfigure(
-                self._trace_id, state="normal" if visible else "hidden",
-            )
+        shown = self._plot_visible and not self._panel_hidden
+        self.canvas.itemconfigure(
+            self._trace_id, state="normal" if shown else "hidden",
+        )
+
+    def set_view_mode_hidden(self, hidden: bool) -> None:
+        """Show or hide the whole panel for the window view mode.
+
+        ``graph`` as a tag covers the trace item too, so the trace state is
+        re-applied afterwards instead of being forced on with the rest.
+        """
+        self._panel_hidden = hidden
+        self.canvas.itemconfigure(self.TAG, state="hidden" if hidden else "normal")
+        self._sync_trace_state()
 
     def redraw(self) -> None:
         px, py, pw, ph = self._plot_px
