@@ -83,16 +83,26 @@ fi
 
 if venv_usable "$VENV"; then
     skip "Reusing $VENV"
-elif [ -e "$VENV" ]; then
-    die "$VENV exists but has no working pip.
-      It is most likely a venv left half-built while ensurepip was missing.
-      Remove it and run this script again:
-
-          rm -rf $VENV"
 else
+    if [ -e "$VENV" ]; then
+        # A venv with no working pip is unusable, but it may still explain why
+        # ensurepip failed - move it aside rather than delete it.
+        BROKEN="$VENV.broken"
+        if [ -e "$BROKEN" ]; then
+            BROKEN="$VENV.broken.$$"
+        fi
+        warn "$VENV has no working pip - moving it to $BROKEN"
+        mv "$VENV" "$BROKEN"
+        info "Delete it once the install succeeds:  rm -rf \"$BROKEN\""
+    fi
+
     info "Creating $VENV ..."
     if ! "$PY_SYS" -m venv "$VENV"; then
-        rm -rf "$VENV"       # drop the half-made venv this run created
+        if [ -e "$VENV" ]; then
+            PARTIAL="$VENV.broken.$$"
+            mv "$VENV" "$PARTIAL"
+            warn "The partial venv was moved to $PARTIAL - delete it once fixed."
+        fi
         die "Failed to create the virtualenv.
       Debian/Ubuntu needs the venv module: sudo apt install python3-venv"
     fi
@@ -118,6 +128,18 @@ else
 fi
 
 # Optional extras - the app runs without them, with reduced functionality.
+# aggdraw rasterises the rounded button corners in one pass; without it they are
+# drawn with a plain Pillow fill (same shape, no grey edge). Not every platform
+# has a wheel, so a failed build here is expected rather than fatal.
+if ! "$PY" -c "import aggdraw" >/dev/null 2>&1; then
+    if "$PY" -m pip install aggdraw --quiet --disable-pip-version-check 2>/dev/null; then
+        printf '  %s aggdraw installed (smoother button corners)\n' "$TAG_SUCCESS"
+    else
+        warn "aggdraw not installed: button corners will be hard-edged."
+        warn "Linux 3.14+ has no wheel - building it needs gcc and python3-dev."
+    fi
+fi
+
 if ! command -v xdg-open >/dev/null 2>&1; then
     warn "xdg-open not found: the 'open i18n folder' button will do nothing."
     warn "Install it with: sudo apt install xdg-utils"

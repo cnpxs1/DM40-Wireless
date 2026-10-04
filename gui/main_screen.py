@@ -18,7 +18,7 @@ from gui import layout as L
 from gui.assets import CLICK_HOTSPOT_TAG, HoverGroup, bind_clickable, raise_click_hotspots
 from gui.confirm_dialog import ask_confirm, raise_overlay
 from gui.display_debug import clear_display_debug, draw_debug_rect
-from gui.sprites import SpriteCache, main_unit_filename
+from gui.sprites import SpriteCache, main_unit_filename, rounded_item, rounded_photo
 from gui.fonts import gui_font
 from gui.theme import rgb_hex
 
@@ -73,7 +73,7 @@ class MainScreen(tk.Frame):
         self._last_unit_key: tuple[str, str] | None = None
         self._aux_cache: dict[str, tuple] = {}
         self._graph = GraphPanel(
-            self.canvas, self._s, self.sprites,
+            self.canvas, self._s,
             on_ble_command=self.app.ble.send_command,
             root=app.root,
             settings=app.settings,
@@ -158,18 +158,10 @@ class MainScreen(tk.Frame):
             )
         for i, (sx, sy, sw, sh) in enumerate(L.save_slot_slots()):
             rx, ry, rw, rh = self._s(sx), self._s(sy), self._s(sw), self._s(sh)
-            radius = self._s(L.SAVE_SLOT_RADIUS)
-            photo = self.sprites.rounded_button("save_area", rw, rh, radius)
-            if photo:
-                self.canvas.create_image(
-                    rx, ry, anchor="nw", image=photo,
-                    tags=("save_slot_bg", f"save_slot_bg_{i}"),
-                )
-            else:
-                self.canvas.create_rectangle(
-                    rx, ry, rx + rw, ry + rh,
-                    fill=rgb_hex("save_area"), outline="", tags="save_slot_bg",
-                )
+            rounded_item(
+                self.canvas, rx, ry, rw, rh, self._s(L.SAVE_SLOT_RADIUS), "save_area",
+                tags=("save_slot_bg", f"save_slot_bg_{i}"),
+            )
         font_main = self._main_value_font()
         font_sec = gui_font(self.app.settings, self._s(L.SEC_FONT), "bold")
         layout = L.main_value_layout()
@@ -438,7 +430,7 @@ class MainScreen(tk.Frame):
         if self._ble_state != "connected":
             return
         if ask_confirm(
-            self.canvas, self.sprites, self.app.settings,
+            self.canvas, self.app.settings,
             title=t("main.disconnect_title"),
             message=t("main.disconnect_ask"),
             yes_text=t("main.disconnect_yes"),
@@ -589,14 +581,9 @@ class MainScreen(tk.Frame):
         return "buttons_hover" if hovered else "buttons"
 
     def _place_mode_button_bg(self, gid: str, rx: int, ry: int, rw: int, rh: int, active: bool) -> int | None:
-        photo = self.sprites.rounded_button(
-            self._mode_bg_color(active, False), rw, rh, self._s(L.MODE_BTN_RADIUS),
-        )
-        if not photo:
-            return None
-        return self.canvas.create_image(
-            rx, ry, anchor="nw", image=photo,
-            tags=("mode_btn", f"mode_bg_{gid}"),
+        return rounded_item(
+            self.canvas, rx, ry, rw, rh, self._s(L.MODE_BTN_RADIUS),
+            self._mode_bg_color(active, False), tags=("mode_btn", f"mode_bg_{gid}"),
         )
 
     def _on_mode_hover_change(self, previous: str | None, current: str | None) -> None:
@@ -639,13 +626,13 @@ class MainScreen(tk.Frame):
         if item is None or box is None:
             return
         _rx, _ry, rw, rh = box
-        photo = self.sprites.rounded_button(
+        photo = rounded_photo(
             self._mode_bg_color(
                 self.app.mode_state.active_group == gid, self._mode_hover.is_hovered(gid),
             ),
             rw, rh, self._s(L.MODE_BTN_RADIUS),
         )
-        if photo:
+        if photo is not None:
             self.canvas.itemconfig(item, image=photo)
 
     def apply_view_mode(self, *, mini: bool, resize: bool = True) -> None:

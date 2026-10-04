@@ -80,6 +80,24 @@ echo.
 echo %SUCCESS% Dependencies installed.
 echo.
 
+REM --- Optional: aggdraw rasterises the rounded button corners in one pass ---
+REM Without it the app still runs, drawing the same corner shape with a plain
+REM Pillow fill (no grey edge). Not every platform has a wheel, so a failure
+REM here is expected and never fatal.
+python -c "import aggdraw" >nul 2>&1
+if errorlevel 1 (
+    pip install aggdraw >nul 2>&1
+    if errorlevel 1 (
+        echo %WARNING% aggdraw not installed - button corners will be hard-edged.
+    ) else (
+        echo %SUCCESS% aggdraw installed - smoother button corners.
+    )
+) else (
+    echo %SKIP% aggdraw is already installed.
+)
+
+echo.
+
 REM --- Install Nuitka for building ---
 echo %STEP%[2/2]%RST% %WHITE%Installing Nuitka (for build_exe.bat)...%RST%
 echo.

@@ -1,2 +1,7 @@
 bleak>=0.21
 Pillow>=10.0
+
+# Vector rasteriser for the rounded button corners. Windows-only by design:
+# Linux has no cp3.14 wheel (a source build needs gcc + python3-dev), so
+# install_Linux.sh installs it separately as an optional extra.
+aggdraw; sys_platform == "win32"

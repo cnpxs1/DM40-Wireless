@@ -10,7 +10,7 @@ import tkinter as tk
 
 from gui import layout as L
 from gui.fonts import gui_font
-from gui.sprites import SpriteCache
+from gui.sprites import rounded_item
 from gui.theme import rgb_hex
 
 TAG = "confirm_dialog"      # carried by every item of the overlay
@@ -45,7 +45,6 @@ def raise_overlay(canvas: tk.Canvas) -> None:
 
 def ask_confirm(
     canvas: tk.Canvas,
-    sprites: SpriteCache,
     settings: dict | None,
     *,
     title: str,
@@ -93,13 +92,13 @@ def ask_confirm(
     body_bottom = canvas.bbox(body_id)[3]
     panel_h = (body_bottom - panel_y) + s(_PAD + _BTN_H + _PAD)
 
-    panel_id = canvas.create_image(
-        panel_x, panel_y, anchor="nw",
-        image=sprites.rounded_button("buttons", panel_w, panel_h, s(L.MODE_BTN_RADIUS)),
+    panel_id = rounded_item(
+        canvas, panel_x, panel_y, panel_w, panel_h, s(L.MODE_BTN_RADIUS), "buttons",
         tags=(TAG, f"{TAG}_panel"),
     )
     for item in (panel_id, title_id, body_id):
-        canvas.tag_raise(item)          # panel under, text on top
+        if item is not None:
+            canvas.tag_raise(item)      # panel under, text on top
 
     def close() -> None:
         canvas.delete(TAG)
@@ -115,9 +114,10 @@ def ask_confirm(
     for index, (label, color, is_confirm) in enumerate(buttons):
         bw, bh = s(_BTN_W), s(_BTN_H)
         bx = panel_x + panel_w - s(_PAD) - (2 - index) * (bw + s(_BTN_GAP)) + s(_BTN_GAP)
-        photo = sprites.rounded_button(color, bw, bh, s(L.MODE_BTN_RADIUS))
-        if photo:
-            canvas.create_image(bx, top, anchor="nw", image=photo, tags=(TAG, f"{TAG}_btn"))
+        rounded_item(
+            canvas, bx, top, bw, bh, s(L.MODE_BTN_RADIUS), color,
+            tags=(TAG, f"{TAG}_btn"),
+        )
         canvas.create_text(
             bx + bw // 2, top + bh // 2, text=label, anchor="center",
             fill=rgb_hex("text_primary"), font=gui_font(settings, s(13), "normal"),

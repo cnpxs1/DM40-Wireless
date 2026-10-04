@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import math
 from pathlib import Path
 import tkinter as tk
 
@@ -172,6 +173,90 @@ def aux_unit_icon_filename(unit: str) -> str | None:
     return fname.replace(".png", "_aux.png")
 
 
+def _rounded_corners(w: int, h: int, r: int, steps: int = 16) -> list[tuple[float, float]]:
+    """Corner path for a rounded rectangle - `steps` segments per quarter circle.
+
+    Fed to a canvas polygon rather than ImageDraw.rounded_rectangle: Tk fills a
+    polygon by pixel centres, so a path on the exact geometry rasterises to the
+    true arc, while Pillow's inscribed corner approximation flattens into a
+    straight 45° chamfer at small radii (5 and 6 among them).
+    """
+    pts: list[tuple[float, float]] = []
+    for cx, cy, a0, a1 in ((w - r, r, -90, 0), (w - r, h - r, 0, 90),
+                           (r, h - r, 90, 180), (r, r, 180, 270)):
+        for i in range(steps + 1):
+            a = math.radians(a0 + (a1 - a0) * i / steps)
+            pts.append((cx + r * math.cos(a), cy + r * math.sin(a)))
+    return pts
+
+
+_round_cache: dict[tuple, tk.PhotoImage] = {}
+
+
+def _rasterise(width: int, height: int, r: int, fill: tuple) -> tk.PhotoImage | None:
+    """Rasterise the corner path into an image, or None when nothing can.
+
+    aggdraw covers the edge in one pass at the target size. Without it Pillow
+    fills the very same path with no anti-aliasing, so the corner keeps its true
+    shape and only loses the grey ramp - that is what a machine aggdraw has no
+    wheel for gets, in exchange for the fallback staying one call.
+    """
+    try:
+        from PIL import Image, ImageDraw, ImageTk
+    except ImportError:
+        return None
+    img = Image.new("RGBA", (width, height), (0, 0, 0, 0))
+    xy = [c for p in _rounded_corners(width, height, r) for c in p]
+    try:
+        import aggdraw
+    except ImportError:
+        ImageDraw.Draw(img).polygon(xy, fill=fill)
+        return ImageTk.PhotoImage(img)
+    draw = aggdraw.Draw(img)
+    draw.polygon(xy, None, aggdraw.Brush(fill))
+    draw.flush()
+    return ImageTk.PhotoImage(img)
+
+
+def rounded_photo(
+    color_name: str, width: int, height: int, radius: int,
+) -> tk.PhotoImage | None:
+    """Anti-aliased rounded rectangle image, cached per colour and size.
+
+    Tk canvas items carry no alpha, so a grey edge has to be baked into an
+    image. The path itself stays exact (_rounded_corners) - that is what keeps
+    small radii from flattening into a chamfer the way an inscribed corner
+    approximation does.
+    """
+    if width < 2 or height < 2:
+        return None
+    r = max(1, min(radius, width // 2, height // 2))
+    key = (color_name, width, height, r)
+    if key in _round_cache:
+        return _round_cache[key]
+    rgb = RGB_COLORS.get(color_name, RGB_COLORS["buttons"])
+    photo = _rasterise(width, height, r, (*rgb, 255))
+    if photo is None:
+        return None
+    _round_cache[key] = photo
+    return photo
+
+
+def rounded_item(
+    canvas: tk.Canvas, x: int, y: int, w: int, h: int,
+    radius: int, color_name: str, *, tags: tuple = (),
+) -> int | None:
+    """Draw a rounded rectangle with its top-left at (x, y).
+
+    Returns the canvas item id, or None when the box is too small to carry a
+    corner (callers then draw nothing, same as before).
+    """
+    photo = rounded_photo(color_name, w, h, radius)
+    if photo is None:
+        return None
+    return canvas.create_image(x, y, anchor="nw", image=photo, tags=tags)
+
+
 class SpriteCache:
     def __init__(self) -> None:
         self._cache: dict[tuple, tk.PhotoImage] = {}
@@ -211,27 +296,6 @@ class SpriteCache:
             # Corrupt / truncated image – treat as missing so callers can
             # fall back (e.g. text-only mode buttons).
             return None
-        photo = ImageTk.PhotoImage(img)
-        self._cache[key] = photo
-        return photo
-
-    def rounded_button(
-        self, color_name: str, width: int, height: int, radius: int,
-    ) -> tk.PhotoImage | None:
-        if width < 2 or height < 2:
-            return None
-        rgb = RGB_COLORS.get(color_name, RGB_COLORS["buttons"])
-        r = max(1, min(radius, width // 2, height // 2))
-        key = ("rounded_btn", color_name, width, height, r)
-        if key in self._cache:
-            return self._cache[key]
-        try:
-            from PIL import Image, ImageDraw, ImageTk
-        except ImportError:
-            return None
-        img = Image.new("RGBA", (width, height), (0, 0, 0, 0))
-        draw = ImageDraw.Draw(img)
-        draw.rounded_rectangle((0, 0, width - 1, height - 1), radius=r, fill=(*rgb, 255))
         photo = ImageTk.PhotoImage(img)
         self._cache[key] = photo
         return photo

@@ -13,7 +13,7 @@ from core.i18n import t
 from gui import connect_layout as CL
 from gui import layout as L
 from gui.assets import bind_clickable, make_scrollbar, raise_click_hotspots
-from gui.sprites import SpriteCache
+from gui.sprites import SpriteCache, rounded_item, rounded_photo
 from gui.fonts import gui_font
 from gui.theme import rgb_hex
 
@@ -153,19 +153,16 @@ class ConnectScreen(tk.Frame):
         self._stop_bt_pulse()
         self._show_bt_icon()
 
-    def _connect_btn_bg_photo(self, rw: int, rh: int, radius: int, *, hovered: bool) -> tk.PhotoImage | None:
-        color = "buttons_active" if hovered else "buttons"
-        return self.sprites.rounded_button(color, rw, rh, radius)
-
     def _set_connect_btn_hover(self, index: int, hovered: bool) -> None:
         bg_id = self._connect_btn_bg_ids.get(index)
         if bg_id is None:
             return
-        x, y, w, h = CL.setup_button_slots()[index]
-        rw, rh = self._s(w), self._s(h)
-        radius = self._s(L.MODE_BTN_RADIUS)
-        photo = self._connect_btn_bg_photo(rw, rh, radius, hovered=hovered)
-        if photo:
+        _x, _y, w, h = CL.setup_button_slots()[index]
+        photo = rounded_photo(
+            "buttons_active" if hovered else "buttons",
+            self._s(w), self._s(h), self._s(L.MODE_BTN_RADIUS),
+        )
+        if photo is not None:
             self.canvas.itemconfig(bg_id, image=photo)
 
     def _draw_bottom_buttons(self) -> None:
@@ -173,14 +170,13 @@ class ConnectScreen(tk.Frame):
         font = gui_font(self.app.settings, self._s(13), "normal")
         for i, (label, (x, y, w, h)) in enumerate(zip(CL.setup_btn_labels(), CL.setup_button_slots())):
             rx, ry, rw, rh = self._s(x), self._s(y), self._s(w), self._s(h)
-            radius = self._s(L.MODE_BTN_RADIUS)
             hit_tag = f"connect_hit_{i}"
-            photo = self._connect_btn_bg_photo(rw, rh, radius, hovered=False)
-            if photo:
-                self._connect_btn_bg_ids[i] = self.canvas.create_image(
-                    rx, ry, anchor="nw", image=photo,
-                    tags=("connect_btn", f"connect_btn_{i}"),
-                )
+            bg_id = rounded_item(
+                self.canvas, rx, ry, rw, rh, self._s(L.MODE_BTN_RADIUS), "buttons",
+                tags=("connect_btn", f"connect_btn_{i}"),
+            )
+            if bg_id is not None:
+                self._connect_btn_bg_ids[i] = bg_id
             self.canvas.create_text(
                 rx + rw // 2, ry + rh // 2, text=label,
                 fill=rgb_hex("text_primary"), anchor="center", font=font,

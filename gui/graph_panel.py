@@ -14,6 +14,7 @@ from core.parsing import Measurement
 from gui import layout as L
 from gui.assets import CLICK_HOTSPOT_TAG
 from gui.fonts import gui_font
+from gui.sprites import rounded_item
 from gui.theme import rgb_hex
 
 
@@ -24,7 +25,6 @@ class GraphPanel:
         self,
         canvas: tk.Canvas,
         scale_fn: Callable[[float], int],
-        sprites,
         *,
         on_ble_command: Callable[[list[int]], None],
         root: tk.Misc,
@@ -32,7 +32,6 @@ class GraphPanel:
     ) -> None:
         self.canvas = canvas
         self._s = scale_fn
-        self.sprites = sprites
         self._send_ble = on_ble_command
         self._root = root
         self._settings = settings
@@ -137,19 +136,10 @@ class GraphPanel:
 
     def _place_graph_bg(self) -> None:
         ax, ay, aw, ah = self._area_px
-        radius = self._s(L.GRAPH_RADIUS)
-        photo = self.sprites.rounded_button("save_area", aw, ah, radius)
-        if photo:
-            self._bg_id = self.canvas.create_image(
-                ax, ay, anchor="nw", image=photo,
-                tags=(self.TAG, "graph_bg"),
-            )
-        else:
-            self._bg_id = self.canvas.create_rectangle(
-                ax, ay, ax + aw, ay + ah,
-                fill=rgb_hex("save_area"), outline="",
-                tags=(self.TAG, "graph_bg"),
-            )
+        self._bg_id = rounded_item(
+            self.canvas, ax, ay, aw, ah, self._s(L.GRAPH_RADIUS), "save_area",
+            tags=(self.TAG, "graph_bg"),
+        )
 
     def _place_rel_bg(self, active: bool) -> None:
         layout = L.graph_layout()
@@ -158,14 +148,12 @@ class GraphPanel:
         if self._rel_bg_id is not None:
             self.canvas.delete(self._rel_bg_id)
             self._rel_bg_id = None
-        color = "buttons_active" if active else "buttons"
-        radius = self._s(L.GRAPH_REL_RADIUS)
-        photo = self.sprites.rounded_button(color, rw, rh, radius)
-        if photo:
-            bg_id = self.canvas.create_image(
-                rx, ry, anchor="nw", image=photo,
-                tags=(self.TAG, "graph_rel_bg"),
-            )
+        bg_id = rounded_item(
+            self.canvas, rx, ry, rw, rh, self._s(L.GRAPH_REL_RADIUS),
+            "buttons_active" if active else "buttons",
+            tags=(self.TAG, "graph_rel_bg"),
+        )
+        if bg_id is not None:
             self._rel_bg_id = bg_id
             self.canvas.tag_lower(bg_id, self._sidebar_ids["rel"])
 
