@@ -81,7 +81,7 @@ def make_scrollbar(master: tk.Misc, scale: float) -> ttk.Scrollbar:
     style.theme_use("clam")
     trough = rgb_hex("top_bar_background")
     thumb = rgb_hex("buttons")
-    hover = rgb_hex("graph_grid")
+    hover = rgb_hex("buttons_hover")
     style.configure(
         "Vertical.TScrollbar",
         background=thumb,
