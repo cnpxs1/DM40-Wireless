@@ -160,6 +160,8 @@ class DM40App:
         # An open dialog is waiting in wait_variable, which never returns once
         # the window is gone - answer it first or the process hangs here.
         cancel_pending()
+        # A scale typed into the settings screen is still uncommitted here.
+        self.settings_screen.commit_pending_scale()
         self.ble.disconnect()
         deadline = time.monotonic() + 2.0
         while self.ble.connected and time.monotonic() < deadline:

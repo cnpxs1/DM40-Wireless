@@ -23,6 +23,12 @@ LANGUAGE_LANG_ICON_MAX_H = 18
 LANGUAGE_LANG_ICON_GAP = 6
 LANGUAGE_SELECTOR_PAD = 8
 
+# Window-scale row. The ceiling lives only here - settings.json is left alone,
+# so a hand-edited scale above it still loads.
+WINDOW_SCALE_MAX = 3.0
+WINDOW_SCALE_FIELD_W = 110   # the field hugs the row's right edge
+
+
 def setting_rows() -> list[tuple[str, str]]:
     """Return translated setting rows (key, label)."""
     from core.i18n import t
@@ -30,6 +36,7 @@ def setting_rows() -> list[tuple[str, str]]:
         ("mini_app", t("settings.label_mini_app")),
         ("always_on_top", t("settings.label_always_on_top")),
         ("raw_console", t("settings.label_raw_console")),
+        ("window_scale", t("settings.label_window_scale")),
         ("language", t("settings.label_language")),
     ]
 

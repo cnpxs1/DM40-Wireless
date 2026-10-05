@@ -146,6 +146,7 @@ Connection status, meter battery, and units are shown in the top bar from live B
 | **Mini app**            | Smaller window without graph and save slots                                                                              |
 | **Always on top**       | Keep the window above other apps                                                                                         |
 | **RAW data console**    | Panel below the UI showing BLE TX/RX packets (protocol debugging)                                                        |
+| **Window scale**        | Window size multiplier typed as `0.5`–`3.0`. Saved to `settings.json`; the new size applies on the next start            |
 | **Language**            | Tap the current language to pick from installed `.toml` files. The folder icon opens `i18n\` for custom translations     |
 
 Changes are saved to `settings.json`.

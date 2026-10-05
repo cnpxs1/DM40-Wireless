@@ -12,7 +12,7 @@ from core.i18n import t, get_i18n, i18n_dir
 from gui import layout as L
 from gui import settings_layout as SL
 from gui.assets import bind_clickable, make_scrollbar, raise_click_hotspots
-from gui.settings import as_text, save_settings
+from gui.settings import MIN_WINDOW_SCALE, as_text, save_settings
 from gui.sprites import SpriteCache
 from gui.fonts import gui_font
 from gui.theme import rgb_hex
@@ -77,6 +77,11 @@ class SettingsScreen(tk.Frame):
         self._lang_size: tuple[int, int] | None = None                # popup, px
         self._lang_binds: list[tuple[str, str]] = []   # (sequence, funcid) on the root
         self._folder_focus_bind: str | None = None
+        self._scale_entry: tk.Entry | None = None
+        self._scale_hint_id: int | None = None
+        self._scale_click_bind: str | None = None
+        # Registered once: register() leaks a Tcl command per call.
+        self._scale_vcmd = (self.register(self._scale_input_ok), "%P")
 
         self._draw_top_bar()
         self._bind_back()
@@ -115,11 +120,17 @@ class SettingsScreen(tk.Frame):
         bx, by, bw, bh = SL.settings_back_hit()
         bind_clickable(
             self.canvas, self._s(bx), self._s(by), self._s(bw), self._s(bh),
-            self.app.go_back_from_settings, tag="settings_hit_back",
+            self._leave_settings, tag="settings_hit_back",
         )
+
+    def _leave_settings(self) -> None:
+        """Back arrow: commit the field, then leave."""
+        self.commit_pending_scale()
+        self.app.go_back_from_settings()
 
     def rebuild(self) -> None:
         self._close_lang_popup()
+        self._destroy_scale_entry()
         if self._title_id is not None:
             self.canvas.itemconfig(self._title_id, text=t("settings.title"))
         self.canvas.delete("settings_row")
@@ -130,6 +141,8 @@ class SettingsScreen(tk.Frame):
         for (key, label), (x, y, w, h) in zip(SL.setting_rows(), SL.settings_row_slots()):
             if key == "language":
                 self._place_language_row(x, y, w, h, key, label, label_font, state_font)
+            elif key == "window_scale":
+                self._place_scale_row(x, y, w, h, key, label, label_font, state_font)
             else:
                 enabled = bool(self.app.settings.get(key, False))
                 self._place_row(x, y, w, h, key, label, enabled, label_font, state_font)
@@ -209,6 +222,25 @@ class SettingsScreen(tk.Frame):
         for sequence, funcid in self._lang_binds:
             self.app.root.unbind(sequence, funcid)
         self._lang_binds.clear()
+
+    def _destroy_scale_entry(self) -> None:
+        """Commit, then destroy the widget; a canvas item does not own it.
+
+        A rebuild started by a click on another row never gives the entry a
+        <FocusOut>, so the typed value is taken first.
+        """
+        if self._scale_entry is not None:
+            self._commit_scale()
+        entry, self._scale_entry = self._scale_entry, None
+        self._scale_hint_id = None
+        if self._scale_click_bind is not None:
+            self.canvas.unbind("<Button-1>", self._scale_click_bind)
+            self._scale_click_bind = None
+        if entry is not None:
+            try:
+                entry.destroy()
+            except tk.TclError:
+                pass
 
     def _place_lang_popup(self) -> None:
         """Park the popup under the selector, in screen coordinates."""
@@ -513,3 +545,92 @@ class SettingsScreen(tk.Frame):
             lambda: self._toggle_lang_popup(selector_left, selector_top, selector_w, selector_h),
             tag=f"settings_selector_hit_{key}", group=_HIT_GROUP,
         )
+
+    def _place_scale_row(
+        self,
+        x: int, y: int, w: int, h: int,
+        key: str, label: str, label_font: tuple, state_font: tuple,
+    ) -> None:
+        """Label plus a text field, with a hint while a restart is pending.
+
+        No whole-row hit area: it would swallow the field's own clicks.
+        """
+        rx, ry, rw, rh, cy = self._row_frame(key, x, y, w, h, label, label_font)
+
+        entry = tk.Entry(
+            self.canvas,
+            bg=rgb_hex("buttons"), fg=rgb_hex("text_primary"),
+            insertbackground=rgb_hex("text_primary"),
+            highlightthickness=0, borderwidth=0, justify="center",
+            font=state_font, validate="key", validatecommand=self._scale_vcmd,
+        )
+        entry.insert(0, self._scale_text())
+        entry.bind("<Return>", self._commit_scale)
+        entry.bind("<FocusOut>", self._commit_scale)
+
+        # Field hugs the right edge like the switch; hint grows leftwards from it.
+        field_w = self._s(SL.WINDOW_SCALE_FIELD_W)
+        field_x = rx + rw - self._s(SL.SETTINGS_ROW_MARGIN) - field_w
+        self.canvas.create_window(
+            field_x + field_w // 2, cy, anchor="center",
+            width=field_w, height=self._s(SL.SETTINGS_ROW_H - 16),
+            window=entry, tags=("settings_row", f"settings_entry_{key}"),
+        )
+        self._scale_entry = entry
+        # Tk keeps the focus on the entry when a canvas item is clicked, so
+        # <FocusOut> alone would leave a typed value uncommitted.
+        self._scale_click_bind = self.canvas.bind(
+            "<Button-1>", self._commit_scale, add="+",
+        )
+        self._scale_hint_id = self.canvas.create_text(
+            field_x - self._s(SL.SETTINGS_SWITCH_GAP), cy,
+            text=self._scale_hint_text(), anchor="e", font=state_font,
+            fill=rgb_hex("text_secondary"),
+            tags=("settings_row", f"settings_scale_hint_{key}"),
+        )
+
+    def _saved_scale(self) -> float:
+        """window_scale straight from settings; sanitize_settings vetted it."""
+        return float(self.app.settings.get("window_scale", 1.0))
+
+    def _scale_text(self) -> str:
+        """The value spelled the way settings.json stores it (1.0, not 1)."""
+        return str(self._saved_scale())
+
+    def _scale_hint_text(self) -> str:
+        """Warn while the saved scale differs from the one this session runs at."""
+        return (t("settings.restart_required")
+                if self._saved_scale() != self.app.scale else "")
+
+    @staticmethod
+    def _scale_input_ok(proposed: str) -> bool:
+        """Digits and one dot; the range is left to commit, so a value already
+        out of range in settings.json stays editable."""
+        return proposed.count(".") <= 1 and all(c.isdigit() or c == "." for c in proposed)
+
+    def _commit_scale(self, _event: tk.Event | None = None) -> None:
+        """Store a valid value on Enter or focus loss; anything else snaps back."""
+        entry = self._scale_entry
+        if entry is None:
+            return
+        try:
+            value = float(entry.get().strip())
+        except ValueError:
+            value = None
+        if value is not None and not MIN_WINDOW_SCALE <= value <= SL.WINDOW_SCALE_MAX:
+            value = None
+        entry.delete(0, "end")
+        entry.insert(0, self._scale_text() if value is None else str(value))
+        if value is None or value == self._saved_scale():
+            return
+        self.app.settings["window_scale"] = value
+        save_settings(self.app.settings)
+        if self._scale_hint_id is not None:
+            self.canvas.itemconfig(self._scale_hint_id, text=self._scale_hint_text())
+
+    def commit_pending_scale(self) -> None:
+        """Store a typed scale before the screen goes away.
+
+        The back arrow and the close button both bypass the field's own hooks.
+        """
+        self._commit_scale()
