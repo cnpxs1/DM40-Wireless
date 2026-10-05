@@ -28,20 +28,15 @@ def _inside(box: tuple[int, int, int, int], x: int, y: int) -> bool:
 
 
 def _make_borderless(popup: tk.Toplevel) -> None:
-    """Drop the title bar without asking to be pinned over everything.
+    """Drop the title bar; overrideredirect is the only portable way.
 
-    mutter puts override-redirect windows - and menu, popup_menu, tooltip,
-    notification, combo and dnd window types with them - in its topmost layer,
-    above every other application. toolbar is the one type hint that stays
-    borderless and in the normal layer, so other applications can cover it.
+    The ``-type`` hint only works under mutter. KWin decorates every hint it
+    knows (toolbar, menu, popup_menu, tooltip, ...) and force-centres its
+    splash type, so it cannot follow an anchor. The price is that the popup
+    outranks normal windows - _on_root_focus_out closes it as soon as our own
+    window loses the focus.
     """
-    if sys.platform == "win32":
-        popup.overrideredirect(True)        # Windows has no EWMH type hints
-        return
-    try:
-        popup.attributes("-type", "toolbar")
-    except tk.TclError:                     # window manager without type hints
-        popup.overrideredirect(True)
+    popup.overrideredirect(True)
 
 
 def _reveal_in_file_manager(path: str) -> None:
@@ -250,6 +245,21 @@ class SettingsScreen(tk.Frame):
         """Our window came forward; the popup goes back in front of it."""
         self._lift_lang_popup()
 
+    def _on_root_focus_out(self, event: tk.Event) -> None:
+        """Our window lost the focus - take the popup down with it.
+
+        The popup is override-redirect: it sits above every normal window and
+        nothing else would ever close it once the user switches away. Child
+        widgets raise <FocusOut> too, and clicking the popup hands the focus
+        to the popup - neither means the user left us.
+        """
+        if event.widget is not self.app.root:
+            return
+        focused = self.app.root.focus_get()
+        if focused is not None and focused.winfo_toplevel() is self._lang_popup:
+            return
+        self._close_lang_popup()
+
     def _on_lang_outside_click(self, event: tk.Event) -> None:
         """Close the dropdown on a click that missed it and the selector.
 
@@ -429,6 +439,7 @@ class SettingsScreen(tk.Frame):
             for seq, handler in (
                 ("<Configure>", self._on_root_configure),
                 ("<FocusIn>", self._on_root_focus_in),
+                ("<FocusOut>", self._on_root_focus_out),
                 ("<Button-1>", self._on_lang_outside_click),
             )
         ]
