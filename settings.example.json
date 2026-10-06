@@ -10,5 +10,6 @@
   "always_on_top": false,
   "raw_console": false,
   "language": "en-US",
-  "gui_font": "Arial"
+  "gui_font_ui": "Arial",
+  "gui_font_data": "Arial"
 }

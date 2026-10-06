@@ -90,7 +90,9 @@ class ModeState:
     def save(self) -> None:
         data = {"mode_index": {gid: g["index"] for gid, g in self.groups.items()}}
         try:
-            UI_STATE_PATH.write_text(json.dumps(data, indent=2), encoding="utf-8")
+            UI_STATE_PATH.write_text(
+                json.dumps(data, indent=2, ensure_ascii=False), encoding="utf-8",
+            )
         except OSError:
             pass
 

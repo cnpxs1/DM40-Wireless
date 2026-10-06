@@ -14,7 +14,7 @@ from gui import settings_layout as SL
 from gui.assets import bind_clickable, make_scrollbar, raise_click_hotspots
 from gui.settings import MIN_WINDOW_SCALE, as_text, save_settings
 from gui.sprites import SpriteCache
-from gui.fonts import gui_font
+from gui.fonts import gui_font_ui
 from gui.theme import rgb_hex
 
 
@@ -89,6 +89,15 @@ class SettingsScreen(tk.Frame):
     def _s(self, v: float) -> int:
         return int(v * self.scale)
 
+    def _title_font(self) -> tuple[str, int, str]:
+        return gui_font_ui(self.app.settings, self._s(SL.SETTINGS_TITLE_FONT), "normal")
+
+    def _label_font(self) -> tuple[str, int, str]:
+        return gui_font_ui(self.app.settings, self._s(SL.SETTINGS_LABEL_FONT), "normal")
+
+    def _state_font(self) -> tuple[str, int, str]:
+        return gui_font_ui(self.app.settings, self._s(SL.SETTINGS_STATE_FONT), "normal")
+
     def raise_click_layer(self) -> None:
         raise_click_hotspots(self.canvas)
 
@@ -97,10 +106,11 @@ class SettingsScreen(tk.Frame):
             0, 0, self._s(L.SCREEN_W), self._s(L.TOP_BAR_H),
             fill=rgb_hex("top_bar_background"), outline="", tags="settings_chrome",
         )
-        font = gui_font(self.app.settings, self._s(SL.SETTINGS_TITLE_FONT), "normal")
+        title = t("settings.title")
         self._title_id = self.canvas.create_text(
-            self._s(L.SCREEN_W // 2), self._s(SL.SETTINGS_TITLE_Y), text=t("settings.title"),
-            fill=rgb_hex("text_primary"), anchor="center", font=font, tags="settings_chrome",
+            self._s(L.SCREEN_W // 2), self._s(SL.SETTINGS_TITLE_Y), text=title,
+            fill=rgb_hex("text_primary"), anchor="center",
+            font=self._title_font(), tags="settings_chrome",
         )
         self._place_back_icon()
 
@@ -133,24 +143,24 @@ class SettingsScreen(tk.Frame):
         # Another row's click rebuilds without a <FocusOut>; commit the value.
         self._commit_scale()
         if self._title_id is not None:
-            self.canvas.itemconfig(self._title_id, text=t("settings.title"))
+            title = t("settings.title")
+            self.canvas.itemconfig(
+                self._title_id, text=title, font=self._title_font(),
+            )
         self.canvas.delete("settings_row")
         self.canvas.delete(_HIT_GROUP)
-        label_font = gui_font(self.app.settings, self._s(SL.SETTINGS_LABEL_FONT), "normal")
-        state_font = gui_font(self.app.settings, self._s(SL.SETTINGS_STATE_FONT), "normal")
-
         for (key, label), (x, y, w, h) in zip(SL.setting_rows(), SL.settings_row_slots()):
             if key == "language":
-                self._place_language_row(x, y, w, h, key, label, label_font, state_font)
+                self._place_language_row(x, y, w, h, key, label)
             elif key == "window_scale":
-                self._place_scale_row(x, y, w, h, key, label, label_font, state_font)
+                self._place_scale_row(x, y, w, h, key, label)
             else:
                 enabled = bool(self.app.settings.get(key, False))
-                self._place_row(x, y, w, h, key, label, enabled, label_font, state_font)
+                self._place_row(x, y, w, h, key, label, enabled)
 
         self.raise_click_layer()
 
-    def _row_frame(self, key: str, x: int, y: int, w: int, h: int, label: str, label_font: tuple) -> tuple[int, int, int, int, int]:
+    def _row_frame(self, key: str, x: int, y: int, w: int, h: int, label: str) -> tuple[int, int, int, int, int]:
         rx, ry, rw, rh = self._s(x), self._s(y), self._s(w), self._s(h)
         self.canvas.create_rectangle(
             rx, ry, rx + rw, ry + rh,
@@ -161,7 +171,7 @@ class SettingsScreen(tk.Frame):
         pad_l = self._s(SL.SETTINGS_ROW_MARGIN)
         self.canvas.create_text(
             rx + pad_l, cy, text=label,
-            fill=rgb_hex("text_primary"), anchor="w", font=label_font,
+            fill=rgb_hex("text_primary"), anchor="w", font=self._label_font(),
             tags=("settings_row", f"settings_lbl_{key}"),
         )
         return rx, ry, rw, rh, cy
@@ -170,9 +180,8 @@ class SettingsScreen(tk.Frame):
         self,
         x: int, y: int, w: int, h: int,
         key: str, label: str, enabled: bool,
-        label_font: tuple, state_font: tuple,
     ) -> None:
-        rx, ry, rw, rh, cy = self._row_frame(key, x, y, w, h, label, label_font)
+        rx, ry, rw, rh, cy = self._row_frame(key, x, y, w, h, label)
 
         switch = self.sprites.settings_sprite(
             "switch_on.png" if enabled else "switch_off.png",
@@ -196,7 +205,7 @@ class SettingsScreen(tk.Frame):
 
         self.canvas.create_text(
             state_x, cy, text=state_text,
-            fill=state_color, anchor="e", font=state_font,
+            fill=state_color, anchor="e", font=self._state_font(),
             tags=("settings_row", f"settings_state_{key}"),
         )
         bind_clickable(
@@ -399,7 +408,6 @@ class SettingsScreen(tk.Frame):
             for sequence in ("<MouseWheel>", "<Button-4>", "<Button-5>"):
                 container.bind(sequence, on_wheel, add="+")
 
-        popup_font = gui_font(self.app.settings, self._s(SL.SETTINGS_STATE_FONT), "normal")
         margin = self._s(SL.SETTINGS_ROW_MARGIN)
         last = len(languages) - 1
 
@@ -413,7 +421,7 @@ class SettingsScreen(tk.Frame):
 
             lbl = tk.Label(
                 row, text=display, bg=bg, fg=rgb_hex("text_primary"), anchor="w",
-                font=popup_font, padx=margin,
+                font=self._state_font(), padx=margin,
             )
             lbl.pack(fill="both", expand=True)
 
@@ -460,9 +468,8 @@ class SettingsScreen(tk.Frame):
 
     def _place_language_row(
         self, x: int, y: int, w: int, h: int, key: str, label: str,
-        label_font: tuple, state_font: tuple,
     ) -> None:
-        rx, ry, rw, rh, cy = self._row_frame(key, x, y, w, h, label, label_font)
+        rx, ry, rw, rh, cy = self._row_frame(key, x, y, w, h, label)
         pad_l = self._s(SL.SETTINGS_ROW_MARGIN)
         pad_r = self._s(SL.SETTINGS_ROW_MARGIN)
 
@@ -515,9 +522,10 @@ class SettingsScreen(tk.Frame):
             fill=rgb_hex("buttons"), outline="",
             tags=("settings_row", f"settings_selector_bg_{key}"),
         )
+        selector_text = f"{display}  ▼"
         self.canvas.create_text(
             selector_left + selector_w // 2, cy,
-            text=f"{display}  ▼", anchor="center", font=state_font,
+            text=selector_text, anchor="center", font=self._state_font(),
             fill=rgb_hex("text_primary"),
             tags=("settings_row", f"settings_selector_txt_{key}"),
         )
@@ -531,14 +539,14 @@ class SettingsScreen(tk.Frame):
     def _place_scale_row(
         self,
         x: int, y: int, w: int, h: int,
-        key: str, label: str, label_font: tuple, state_font: tuple,
+        key: str, label: str,
     ) -> None:
         """Label plus a text field, with a hint while a restart is pending.
 
         No whole-row hit area: it would swallow the field's own clicks. The
         field is created once and reused - remapping it blinks on X11.
         """
-        rx, ry, rw, rh, cy = self._row_frame(key, x, y, w, h, label, label_font)
+        rx, ry, rw, rh, cy = self._row_frame(key, x, y, w, h, label)
 
         # Field hugs the right edge like the switch; hint grows leftwards from it.
         field_w = self._s(SL.WINDOW_SCALE_FIELD_W)
@@ -551,7 +559,8 @@ class SettingsScreen(tk.Frame):
                 bg=rgb_hex("buttons"), fg=rgb_hex("text_primary"),
                 insertbackground=rgb_hex("text_primary"),
                 highlightthickness=0, borderwidth=0, justify="center",
-                font=state_font, validate="key", validatecommand=self._scale_vcmd,
+                font=self._state_font(),
+                validate="key", validatecommand=self._scale_vcmd,
             )
             entry.insert(0, self._scale_text())
             entry.bind("<Return>", self._commit_scale)
@@ -569,9 +578,10 @@ class SettingsScreen(tk.Frame):
         else:
             self.canvas.coords(self._scale_item_id, field_x + field_w // 2, cy)
 
+        hint = self._scale_hint_text()
         self._scale_hint_id = self.canvas.create_text(
             field_x - self._s(SL.SETTINGS_SWITCH_GAP), cy,
-            text=self._scale_hint_text(), anchor="e", font=state_font,
+            text=hint, anchor="e", font=self._state_font(),
             fill=rgb_hex("text_secondary"),
             tags=("settings_row", f"settings_scale_hint_{key}"),
         )
@@ -613,7 +623,10 @@ class SettingsScreen(tk.Frame):
         self.app.settings["window_scale"] = value
         save_settings(self.app.settings)
         if self._scale_hint_id is not None:
-            self.canvas.itemconfig(self._scale_hint_id, text=self._scale_hint_text())
+            hint = self._scale_hint_text()
+            self.canvas.itemconfig(
+                self._scale_hint_id, text=hint, font=self._state_font(),
+            )
 
     def commit_pending_scale(self) -> None:
         """Store a typed scale before the screen goes away.

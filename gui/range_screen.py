@@ -16,7 +16,7 @@ from gui import layout as L
 from gui import range_layout as RL
 from gui.assets import HoverGroup, bind_clickable, raise_click_hotspots
 from gui.sprites import SpriteCache
-from gui.fonts import gui_font
+from gui.fonts import gui_font_ui
 from gui.theme import rgb_hex
 
 
@@ -59,15 +59,22 @@ class RangeScreen(tk.Frame):
     def raise_click_layer(self) -> None:
         raise_click_hotspots(self.canvas)
 
+    def _title_font(self) -> tuple[str, int, str]:
+        return gui_font_ui(self.app.settings, self._s(RL.RANGE_TITLE_FONT), "normal")
+
+    def _btn_font(self) -> tuple[str, int, str]:
+        return gui_font_ui(self.app.settings, self._s(RL.RANGE_BTN_FONT), "normal")
+
     def _draw_top_bar(self) -> None:
         self.canvas.create_rectangle(
             0, 0, self._s(L.SCREEN_W), self._s(L.TOP_BAR_H),
             fill=rgb_hex("top_bar_background"), outline="", tags="range_chrome",
         )
-        font = gui_font(self.app.settings, self._s(RL.RANGE_TITLE_FONT), "normal")
+        title = t("range.title")
         self._title_id = self.canvas.create_text(
-            self._s(L.SCREEN_W // 2), self._s(RL.RANGE_TITLE_Y), text=t("range.title"),
-            fill=rgb_hex("text_primary"), anchor="center", font=font, tags="range_chrome",
+            self._s(L.SCREEN_W // 2), self._s(RL.RANGE_TITLE_Y), text=title,
+            fill=rgb_hex("text_primary"), anchor="center",
+            font=self._title_font(), tags="range_chrome",
         )
         self._place_back_icon()
 
@@ -100,23 +107,24 @@ class RangeScreen(tk.Frame):
 
         if not kind or kind not in RANGE_CAPABLE_KINDS:
             if self._title_id is not None:
+                text = t("range.title_no_mode")
                 self.canvas.itemconfig(
-                    self._title_id, text=t("range.title_no_mode"),
+                    self._title_id, text=text, font=self._title_font(),
                 )
             self.raise_click_layer()
             return
 
         if self._title_id is not None:
+            text = range_screen_title(kind)
             self.canvas.itemconfig(
-                self._title_id, text=range_screen_title(kind),
+                self._title_id, text=text, font=self._title_font(),
             )
 
         items = ranges_for_kind(kind, MODEL.model_name)
         start_y = L.TOP_BAR_H + RL.RANGE_BTN_MARGIN
-        font = gui_font(self.app.settings, self._s(RL.RANGE_BTN_FONT), "normal")
 
         for (label, flag), (x, y, w, h) in zip(items, RL.range_button_slots(len(items), start_y=start_y)):
-            self._place_range_button(x, y, w, h, label, flag, flag == active_flag, font)
+            self._place_range_button(x, y, w, h, label, flag, flag == active_flag)
 
         group = RL.subtype_group(kind)
         if group:
@@ -125,14 +133,15 @@ class RangeScreen(tk.Frame):
             slots = RL.range_button_slots(len(options), start_y=sy)
             for (text, cmd_key), (x, y, w, h) in zip(options, slots):
                 active = KIND_TO_CMD.get(kind) == cmd_key
-                self._place_subtype_button(x, y, w, h, text, cmd_key, active, font)
+                self._place_subtype_button(x, y, w, h, text, cmd_key, active)
 
         self.raise_click_layer()
         self._range_hover.restore()
 
     def _place_range_button(
-        self, x: int, y: int, w: int, h: int, label: str, flag: int, active: bool, font: tuple,
+        self, x: int, y: int, w: int, h: int, label: str, flag: int, active: bool,
     ) -> None:
+        font = self._btn_font()
         rx, ry, rw, rh = self._s(x), self._s(y), self._s(w), self._s(h)
         bg_item = self.canvas.create_rectangle(
             rx, ry, rx + rw, ry + rh,
@@ -169,8 +178,9 @@ class RangeScreen(tk.Frame):
         self._range_hover.add(f"range_{flag}", (rx, ry, rw, rh), hit_tag)
 
     def _place_subtype_button(
-        self, x: int, y: int, w: int, h: int, text: str, cmd_key: str, active: bool, font: tuple,
+        self, x: int, y: int, w: int, h: int, text: str, cmd_key: str, active: bool,
     ) -> None:
+        font = self._btn_font()
         rx, ry, rw, rh = self._s(x), self._s(y), self._s(w), self._s(h)
         bg = "buttons_active" if active else "range_buttons"
         bg_item = self.canvas.create_rectangle(

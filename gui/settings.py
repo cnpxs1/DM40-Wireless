@@ -22,7 +22,8 @@ DEFAULTS: dict[str, Any] = {
     "always_on_top": False,
     "raw_console": False,
     "language": "en-US",
-    "gui_font": "Arial",
+    "gui_font_ui": "Arial",
+    "gui_font_data": "Arial",
 }
 
 
@@ -32,7 +33,7 @@ MIN_WINDOW_SCALE = 0.5
 
 # Repaired by type alone; target_mac, model_name and device_counts have their own
 # rules below. The bool settings are absent - bool() never fails on any value.
-_TEXT_KEYS = ("language", "gui_font")
+_TEXT_KEYS = ("language", "gui_font_ui", "gui_font_data")
 
 # Six colon-separated hex pairs - Windows and BlueZ report the same form, so one
 # pattern covers both. Dashes are accepted for hand-edited files.
@@ -123,6 +124,16 @@ def sanitize_settings(settings: dict) -> bool:
 
     changed = any(settings.get(key) != value for key, value in fixed.items())
     settings.update(fixed)
+
+    # The old single font key moves to the ui slot; both old keys are dropped.
+    if "gui_font" in settings:
+        if not as_text(settings.get("gui_font_ui")):
+            settings["gui_font_ui"] = as_text(settings["gui_font"]) or DEFAULTS["gui_font_ui"]
+        del settings["gui_font"]
+        changed = True
+    if "gui_font_nonlatin" in settings:
+        del settings["gui_font_nonlatin"]
+        changed = True
     return changed
 
 
@@ -151,23 +162,33 @@ def persist_device(settings: dict, *, mac: str, model_name: str, device_counts: 
 
 
 def load_settings() -> dict:
+    """Merged settings; a missing or incomplete file is written back complete."""
     try:
         data = json.loads(SETTINGS_PATH.read_text(encoding="utf-8"))
-        if isinstance(data, dict):
-            merged = deepcopy(DEFAULTS)
-            merged.update(data)
-            return merged
+    except FileNotFoundError:
+        data = {}                     # first run - everything below gets filled in
     except (OSError, json.JSONDecodeError):
-        pass
-    return deepcopy(DEFAULTS)
+        return deepcopy(DEFAULTS)     # a damaged file is left untouched
+    if not isinstance(data, dict):
+        return deepcopy(DEFAULTS)
+    merged = deepcopy(DEFAULTS)
+    merged.update(data)
+    if any(key not in data for key in DEFAULTS):
+        save_settings(merged)         # write back the keys added since
+    return merged
 
 
 def save_settings(settings: dict) -> bool:
-    """Atomically write settings.json (temp file then replace, avoids corruption)."""
+    """Atomic write (temp then replace, avoids corruption).
+
+    Non-ASCII stays readable for hand-editing.
+    """
     import tempfile
     tmp = SETTINGS_PATH.with_suffix(".tmp")
     try:
-        tmp.write_text(json.dumps(settings, indent=2), encoding="utf-8")
+        tmp.write_text(
+            json.dumps(settings, indent=2, ensure_ascii=False), encoding="utf-8",
+        )
         tmp.replace(SETTINGS_PATH)
         return True
     except OSError:

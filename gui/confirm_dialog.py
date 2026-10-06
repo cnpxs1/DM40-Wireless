@@ -9,7 +9,7 @@ from __future__ import annotations
 import tkinter as tk
 
 from gui import layout as L
-from gui.fonts import gui_font
+from gui.fonts import gui_font_ui
 from gui.sprites import rounded_item
 from gui.theme import rgb_hex
 
@@ -78,12 +78,12 @@ def ask_confirm(
 
     title_id = canvas.create_text(
         panel_x + s(_PAD), panel_y + s(_PAD), text=title, anchor="nw",
-        fill=rgb_hex("text_primary"), font=gui_font(settings, s(15), "bold"),
+        fill=rgb_hex("text_primary"), font=gui_font_ui(settings, s(15), "bold"),
         width=inner_w, tags=TAG,
     )
     body_id = canvas.create_text(
         panel_x + s(_PAD), panel_y + s(_PAD) + s(_TITLE_H), text=message, anchor="nw",
-        fill=rgb_hex("text_secondary"), font=gui_font(settings, s(13), "normal"),
+        fill=rgb_hex("text_secondary"), font=gui_font_ui(settings, s(13), "normal"),
         width=inner_w, tags=TAG,
     )
 
@@ -120,7 +120,7 @@ def ask_confirm(
         )
         canvas.create_text(
             bx + bw // 2, top + bh // 2, text=label, anchor="center",
-            fill=rgb_hex("text_primary"), font=gui_font(settings, s(13), "normal"),
+            fill=rgb_hex("text_primary"), font=gui_font_ui(settings, s(13), "normal"),
             tags=(TAG, f"{TAG}_btn"),
         )
         hit = f"{TAG}_hit_{index}"

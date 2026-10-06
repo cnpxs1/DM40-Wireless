@@ -19,7 +19,7 @@ from gui.assets import CLICK_HOTSPOT_TAG, HoverGroup, bind_clickable, raise_clic
 from gui.confirm_dialog import ask_confirm, raise_overlay
 from gui.display_debug import clear_display_debug, draw_debug_rect
 from gui.sprites import SpriteCache, main_unit_filename, rounded_item, rounded_photo
-from gui.fonts import gui_font
+from gui.fonts import gui_font_data, gui_font_ui
 from gui.theme import rgb_hex
 
 # The top bar buttons: key, click area, hotspot tag. One list, so adding a
@@ -104,18 +104,27 @@ class MainScreen(tk.Frame):
         return int(v * self.scale)
 
     def _main_value_font(self) -> tuple[str, int, str]:
-        return gui_font(self.app.settings, self._s(L.MAIN_VALUE_FONT), "bold")
+        return gui_font_data(self.app.settings, self._s(L.MAIN_VALUE_FONT), "bold")
 
     def _bt_off_font(self) -> tuple[str, int, str]:
-        return gui_font(self.app.settings, self._s(L.MAIN_BT_OFF_FONT), "bold")
+        return gui_font_ui(self.app.settings, self._s(L.MAIN_BT_OFF_FONT), "bold")
+
+    def _sec_font(self) -> tuple[str, int, str]:
+        return gui_font_data(self.app.settings, self._s(L.SEC_FONT), "bold")
+
+    def _save_font(self) -> tuple[str, int, str]:
+        return gui_font_data(self.app.settings, self._s(L.SAVE_FONT), "bold")
 
     def _main_row_cy(self) -> int:
         return self._s(L.MAIN_VALUE_ROW_CY)
 
-    def _set_canvas_text(self, key: str, text: str) -> None:
+    def _set_canvas_text(self, key: str, text: str, font: tuple | None = None) -> None:
         item = self._text_ids.get(key)
         if item is not None:
-            self.canvas.itemconfig(item, text=text)
+            if font is None:
+                self.canvas.itemconfig(item, text=text)
+            else:
+                self.canvas.itemconfig(item, text=text, font=font)
 
     def _hide_sprite(self, key: str) -> None:
         item = self._sprite_ids.pop(key, None)
@@ -138,7 +147,7 @@ class MainScreen(tk.Frame):
         self._show_sprite(key, photo, self._s(cx), self._s(cy), anchor="center")
 
     def _top_bar_status_font(self) -> tuple[str, int, str]:
-        return gui_font(self.app.settings, self._s(L.TOP_BAR_STATUS_FONT), "normal")
+        return gui_font_data(self.app.settings, self._s(L.TOP_BAR_STATUS_FONT), "normal")
 
     def _top_bar_status_y(self, img_y: float) -> int:
         return self._s(img_y + L.TOP_BAR_STATUS_Y_OFFSET)
@@ -163,7 +172,7 @@ class MainScreen(tk.Frame):
                 tags=("save_slot_bg", f"save_slot_bg_{i}"),
             )
         font_main = self._main_value_font()
-        font_sec = gui_font(self.app.settings, self._s(L.SEC_FONT), "bold")
+        font_sec = self._sec_font()
         layout = L.main_value_layout()
         sign_x, _, sign_w, _ = layout["sign"]
         digits_x, _, digits_w, _ = layout["digits"]
@@ -187,17 +196,19 @@ class MainScreen(tk.Frame):
             self._s(digits_x + digits_w // 2), cy, text="---",
             fill=rgb_hex("orange_main"), anchor="center", font=font_main,
         )
-        top_font = self._top_bar_status_font()
         self._text_ids["range_text"] = self.canvas.create_text(
             self._s(L.RANGE_IMG[0]), self._top_bar_status_y(L.RANGE_IMG[1]), text="AUTO+",
-            fill=rgb_hex("text_primary"), anchor="w", font=top_font,
+            fill=rgb_hex("text_primary"), anchor="w",
+            font=self._top_bar_status_font(),
         )
+        hold_text = t("main.run")
         self._text_ids["hold_text"] = self.canvas.create_text(
-            self._s(L.HOLD_IMG[0]), self._top_bar_status_y(L.HOLD_IMG[1]), text=t("main.run"),
-            fill=rgb_hex("text_primary"), anchor="w", font=top_font,
+            self._s(L.HOLD_IMG[0]), self._top_bar_status_y(L.HOLD_IMG[1]), text=hold_text,
+            fill=rgb_hex("text_primary"), anchor="w",
+            font=self._top_bar_status_font(),
         )
 
-        save_font = gui_font(self.app.settings, self._s(L.SAVE_FONT), "bold")
+        save_font = self._save_font()
         for i in range(SAVE_SLOT_COUNT):
             self._text_ids[f"save_{i}"] = self.canvas.create_text(
                 0, 0, text="", anchor="w", font=save_font,
@@ -274,11 +285,10 @@ class MainScreen(tk.Frame):
             self._set_main_value_color(False)
             return
 
+        sign, body, mode = split_main_value(raw, decimals)
         main_font = self._main_value_font()
         self.canvas.itemconfig(self._text_ids["value_digits"], font=main_font)
         self.canvas.itemconfig(self._text_ids["value_sign"], font=main_font)
-
-        sign, body, mode = split_main_value(raw, decimals)
         layout = L.main_value_layout()
         sign_x, _, sign_w, _ = layout["sign"]
         digits_x, _, digits_w, _ = layout["digits"]
@@ -319,14 +329,15 @@ class MainScreen(tk.Frame):
     def _set_range_display(self, label: str) -> None:
         self._last_range_label = label
         self._hide_sprite("range")
-        self._set_canvas_text("range_text", label)
+        self._set_canvas_text("range_text", label, self._top_bar_status_font())
 
     def _set_hold_display(self, hold: bool, *, force: bool = False) -> None:
         if not force and hold == self._last_hold:
             return
         self._last_hold = hold
         self._hide_sprite("hold_run")
-        self._set_canvas_text("hold_text", t("main.hold") if hold else t("main.run"))
+        text = t("main.hold") if hold else t("main.run")
+        self._set_canvas_text("hold_text", text, self._top_bar_status_font())
 
     def _is_stale_hold(self, reported: bool) -> bool:
         """True while a notification still echoes the pre-toggle HOLD state.
@@ -478,7 +489,7 @@ class MainScreen(tk.Frame):
             self._hide_sprite(char_key)
             return
 
-        self._set_canvas_text(text_key, panel.value)
+        self._set_canvas_text(text_key, panel.value, self._sec_font())
         self.canvas.coords(text_id, start_x, y)
         self.canvas.itemconfig(text_id, anchor="w")
 
@@ -520,7 +531,7 @@ class MainScreen(tk.Frame):
             self._hide_sprite(char_key)
             return
 
-        self._set_canvas_text(text_key, panel.value)
+        self._set_canvas_text(text_key, panel.value, self._sec_font())
         text_id = self._text_ids[text_key]
         bbox = self.canvas.bbox(text_id)
         if not bbox:
@@ -697,7 +708,7 @@ class MainScreen(tk.Frame):
         label = btn_label(cmd_key)
         lines = label.split("\n")
         size = max(7, int(rh * (0.30 if len(lines) > 1 else 0.42)))
-        font = gui_font(self.app.settings, size, "normal")
+        font = gui_font_ui(self.app.settings, size, "normal")
         try:
             from tkinter import font as tkfont
             # Reuse one Font object across shrink passes (recreating it would
@@ -710,7 +721,7 @@ class MainScreen(tk.Frame):
                     break
                 size = max(7, int(size * min((rw - 8) / max(widest, 1),
                                              (rh - 4) / max(line_h, 1))))
-                font = gui_font(self.app.settings, size, "normal")
+                font = gui_font_ui(self.app.settings, size, "normal")
                 # family/weight are constant across passes – update size only
                 # (also keeps tkinter's weight Literal["normal","bold"] typing).
                 mf.configure(size=font[1])
@@ -792,7 +803,7 @@ class MainScreen(tk.Frame):
 
             color = rgb_hex("orange_main") if active else rgb_hex("text_primary")
             self.canvas.itemconfig(self._text_ids[text_key], fill=color)
-            self._set_canvas_text(text_key, reading.text)
+            self._set_canvas_text(text_key, reading.text, self._save_font())
             self.canvas.coords(self._text_ids[text_key], self._s(sx + 2), cy)
             self.canvas.itemconfig(self._text_ids[text_key], anchor="w")
 

@@ -14,7 +14,7 @@ from gui import connect_layout as CL
 from gui import layout as L
 from gui.assets import bind_clickable, make_scrollbar, raise_click_hotspots
 from gui.sprites import SpriteCache, rounded_item, rounded_photo
-from gui.fonts import gui_font
+from gui.fonts import gui_font_ui
 from gui.theme import rgb_hex
 
 
@@ -61,18 +61,20 @@ class ConnectScreen(tk.Frame):
             0, 0, self._s(L.SCREEN_W), self._s(L.TOP_BAR_H),
             fill=rgb_hex("top_bar_background"), outline="", tags="connect_chrome",
         )
-        font = gui_font(self.app.settings, self._s(CL.SETUP_TITLE_FONT), "bold")
+        title = t("setup.title")
+        font = gui_font_ui(self.app.settings, self._s(CL.SETUP_TITLE_FONT), "bold")
         self.canvas.create_text(
-            self._s(L.SCREEN_W // 2), self._s(CL.SETUP_TITLE_Y), text=t("setup.title"),
+            self._s(L.SCREEN_W // 2), self._s(CL.SETUP_TITLE_Y), text=title,
             fill=rgb_hex("text_primary"), anchor="center", font=font, tags="connect_chrome",
         )
-        hint_font = gui_font(self.app.settings, self._s(CL.SETUP_HINT_FONT), "normal")
+        hint = t("setup.hint")
+        hint_font = gui_font_ui(self.app.settings, self._s(CL.SETUP_HINT_FONT), "normal")
         self.canvas.create_text(
             self._s(L.SCREEN_W // 2), self._s(CL.SETUP_HINT_Y),
-            text=t("setup.hint"),
+            text=hint,
             fill=rgb_hex("text_secondary"), anchor="center", font=hint_font, tags="connect_chrome",
         )
-        status_font = gui_font(self.app.settings, self._s(CL.SETUP_STATUS_FONT), "normal")
+        status_font = gui_font_ui(self.app.settings, self._s(CL.SETUP_STATUS_FONT), "normal")
         # width= makes Tk wrap overlong messages instead of clipping them
         self._status_id = self.canvas.create_text(
             self._s(L.SCREEN_W // 2), self._s(CL.SETUP_STATUS_Y), text="",
@@ -97,7 +99,10 @@ class ConnectScreen(tk.Frame):
 
     def _set_status(self, text: str) -> None:
         if self._status_id is not None:
-            self.canvas.itemconfigure(self._status_id, text=text)
+            self.canvas.itemconfigure(
+                self._status_id, text=text,
+                font=gui_font_ui(self.app.settings, self._s(CL.SETUP_STATUS_FONT), "normal"),
+            )
 
     def _top_bar_icon(self, name: str, max_w: int) -> tk.PhotoImage | None:
         return self.sprites.top_bar(
@@ -167,7 +172,6 @@ class ConnectScreen(tk.Frame):
 
     def _draw_bottom_buttons(self) -> None:
         self._connect_btn_bg_ids.clear()
-        font = gui_font(self.app.settings, self._s(13), "normal")
         for i, (label, (x, y, w, h)) in enumerate(zip(CL.setup_btn_labels(), CL.setup_button_slots())):
             rx, ry, rw, rh = self._s(x), self._s(y), self._s(w), self._s(h)
             hit_tag = f"connect_hit_{i}"
@@ -179,7 +183,8 @@ class ConnectScreen(tk.Frame):
                 self._connect_btn_bg_ids[i] = bg_id
             self.canvas.create_text(
                 rx + rw // 2, ry + rh // 2, text=label,
-                fill=rgb_hex("text_primary"), anchor="center", font=font,
+                fill=rgb_hex("text_primary"), anchor="center",
+                font=gui_font_ui(self.app.settings, self._s(13), "normal"),
                 tags=("connect_btn", f"connect_btn_txt_{i}"),
             )
             cmd = self.start_scan if i == 0 else self._on_connect
@@ -275,7 +280,6 @@ class ConnectScreen(tk.Frame):
             self.raise_click_layer()
             return
 
-        font = gui_font(self.app.settings, self._s(CL.SETUP_ROW_FONT), "normal")
         x = CL.SETUP_LIST_MARGIN
         # The bar sits inside the list area, so the rows give up its width.
         bar_w = CL.SETUP_SCROLLBAR_W if count > visible else 0
@@ -295,9 +299,11 @@ class ConnectScreen(tk.Frame):
                 rx, ry, rx + rw, ry + rh,
                 fill=rgb_hex(bg), outline="", tags=("connect_row", f"connect_row_{slot}"),
             )
+            label = dev.list_label()
             self.canvas.create_text(
                 rx + self._s(CL.SETUP_ROW_PAD_LEFT), ry + rh // 2,
-                text=dev.list_label(), anchor="w", font=font,
+                text=label, anchor="w",
+                font=gui_font_ui(self.app.settings, self._s(CL.SETUP_ROW_FONT), "normal"),
                 fill=rgb_hex("text_primary"), tags=("connect_row", f"connect_txt_{slot}"),
             )
             # Tags follow the slot, so scrolling rebinds the same few hot areas;

@@ -191,17 +191,18 @@ Then start the app using one of these:
 
 The file lives next to the exe or in the project root. It is not committed to git — use `settings.example.json` as a template.
 
-| Key              | Meaning                                                                                      |
-| ---------------- | -------------------------------------------------------------------------------------------- |
-| `target_mac`     | DM40 MAC address (empty `""` show Connect screen)                                            |
-| `model_name`     | `DM40A`, `DM40B`, or `DM40C`                                                                 |
-| `device_counts`  | Range count scale (40k / 50k / 60k)                                                          |
-| `window_scale`   | Window scale (`1.0` = 480×300 logical px)                                                    |
-| `mini_app`       | Mini mode (boolean: false / true)                                                            |
-| `always_on_top`  | Always on top (boolean: false / true)                                                        |
-| `raw_console`    | RAW console (boolean: false / true)                                                          |
-| `language`       | UI language code matching a file in `i18n/` (e.g. `"en-US"`, `"zh-CN"`, default `"en-US"`)   |
-| `gui_font`       | Configurable UI font family, default `"Arial"`                                               |
+| Key                 | Meaning                                                                                      |
+| ------------------- | -------------------------------------------------------------------------------------------- |
+| `target_mac`        | DM40 MAC address (empty `""` show Connect screen)                                            |
+| `model_name`        | `DM40A`, `DM40B`, or `DM40C`                                                                 |
+| `device_counts`     | Range count scale (40k / 50k / 60k)                                                          |
+| `window_scale`      | Window scale (`1.0` = 480×300 logical px)                                                    |
+| `mini_app`          | Mini mode (boolean: false / true)                                                            |
+| `always_on_top`     | Always on top (boolean: false / true)                                                        |
+| `raw_console`       | RAW console (boolean: false / true)                                                          |
+| `language`          | UI language code matching a file in `i18n/` (e.g. `"en-US"`, `"zh-CN"`, default `"en-US"`)   |
+| `gui_font_ui`       | Font family for the UI texts (labels, buttons, dialogs), default `"Arial"`                    |
+| `gui_font_data`     | Font family for readings, graph scales and the range readout, default `"Arial"`               |
 
 <br>
 

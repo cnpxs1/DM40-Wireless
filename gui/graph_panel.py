@@ -13,7 +13,7 @@ from core.i18n import t
 from core.parsing import Measurement
 from gui import layout as L
 from gui.assets import CLICK_HOTSPOT_TAG
-from gui.fonts import gui_font
+from gui.fonts import gui_font_data, gui_font_ui
 from gui.sprites import rounded_item
 from gui.theme import rgb_hex
 
@@ -75,8 +75,14 @@ class GraphPanel:
         self._rel_bg_color_name: str | None = None
         self._rel_hover = False
 
+    def _data_font(self) -> tuple[str, int, str]:
+        return gui_font_data(self._settings, self._s(L.GRAPH_FONT), "normal")
+
+    def _rel_font(self) -> tuple[str, int, str]:
+        return gui_font_ui(self._settings, self._s(L.GRAPH_FONT), "bold")
+
     def install(self) -> None:
-        font = gui_font(self._settings, self._s(L.GRAPH_FONT), "normal")
+        font = self._data_font()
         layout = L.graph_layout()
         gx, gy, gw, gh = L.GRAPH_AREA
         self._area_px = (self._s(gx), self._s(gy), self._s(gw), self._s(gh))
@@ -125,11 +131,12 @@ class GraphPanel:
             tags=(self.TAG, "graph_min"),
         )
 
-        rel_font = gui_font(self._settings, self._s(L.GRAPH_FONT), "bold")
+        rel_text = t("graph.rel")
+        rel_font = self._rel_font()
         rcx = self._s(rx + rw // 2)
         rcy = self._s(ry + rh // 2)
         self._sidebar_ids["rel"] = self.canvas.create_text(
-            rcx, rcy, text=t("graph.rel"), anchor="center", font=rel_font,
+            rcx, rcy, text=rel_text, anchor="center", font=rel_font,
             fill=rgb_hex("text_primary"), tags=(self.TAG, "graph_rel_text"),
         )
         self._refresh_rel_bg()
@@ -260,7 +267,8 @@ class GraphPanel:
         """Refresh REL button text (called on language change)."""
         rid = self._sidebar_ids.get("rel")
         if rid:
-            self.canvas.itemconfig(rid, text=t("graph.rel"))
+            text = t("graph.rel")
+            self.canvas.itemconfig(rid, text=text, font=self._rel_font())
 
     def clear(self) -> None:
         """Drop the session trace: samples, MIN/MAX and all they drew.
@@ -348,16 +356,16 @@ class GraphPanel:
         unit = self._axis_unit
         dec = self._decimals
         if self._session_max is not None:
+            text = format_graph_value(self._session_max, unit, dec)
             self.canvas.itemconfigure(
-                self._sidebar_ids["max"],
-                text=format_graph_value(self._session_max, unit, dec),
+                self._sidebar_ids["max"], text=text, font=self._data_font(),
             )
         else:
             self.canvas.itemconfigure(self._sidebar_ids["max"], text="")
         if self._session_min is not None:
+            text = format_graph_value(self._session_min, unit, dec)
             self.canvas.itemconfigure(
-                self._sidebar_ids["min"],
-                text=format_graph_value(self._session_min, unit, dec),
+                self._sidebar_ids["min"], text=text, font=self._data_font(),
             )
         else:
             self.canvas.itemconfigure(self._sidebar_ids["min"], text="")
@@ -411,8 +419,17 @@ class GraphPanel:
         if self._trace_id is not None:
             self.canvas.coords(self._trace_id, *pts)
 
-        self.canvas.itemconfigure(self._scale_ids["top"], text=self._scale_label(hi))
-        self.canvas.itemconfigure(self._scale_ids["bot"], text=self._scale_label(lo))
+        top_text = self._scale_label(hi)
+        bot_text = self._scale_label(lo)
+        self.canvas.itemconfigure(
+            self._scale_ids["top"], text=top_text, font=self._data_font(),
+        )
+        self.canvas.itemconfigure(
+            self._scale_ids["bot"], text=bot_text, font=self._data_font(),
+        )
         mid_val = 0.0 if self._relative_active else (hi + lo) / 2
-        self.canvas.itemconfigure(self._scale_ids["mid"], text=self._scale_label(mid_val))
+        mid_text = self._scale_label(mid_val)
+        self.canvas.itemconfigure(
+            self._scale_ids["mid"], text=mid_text, font=self._data_font(),
+        )
         self._update_grid_lines()
