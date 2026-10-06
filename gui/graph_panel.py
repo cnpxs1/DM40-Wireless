@@ -54,7 +54,7 @@ class GraphPanel:
         self._y_lo = 0.0
         self._y_hi = 1.0
         # Two independent reasons to hide the trace: not enough samples to draw a
-        # line, and the panel being off screen (mini mode). Only their
+        # line, and the panel being off-screen (mini mode). Only their
         # combination decides, so neither may be cached into the canvas alone.
         self._plot_visible = False
         self._panel_hidden = False
@@ -72,6 +72,8 @@ class GraphPanel:
         self._scale_ids: dict[str, int] = {}
         self._sidebar_ids: dict[str, int] = {}
         self._rel_bg_id: int | None = None
+        self._rel_bg_color_name: str | None = None
+        self._rel_hover = False
 
     def install(self) -> None:
         font = gui_font(self._settings, self._s(L.GRAPH_FONT), "normal")
@@ -130,7 +132,7 @@ class GraphPanel:
             rcx, rcy, text=t("graph.rel"), anchor="center", font=rel_font,
             fill=rgb_hex("text_primary"), tags=(self.TAG, "graph_rel_text"),
         )
-        self._place_rel_bg(False)
+        self._refresh_rel_bg()
         self._bind_interactions(layout)
         self._layout_static()
 
@@ -141,7 +143,18 @@ class GraphPanel:
             tags=(self.TAG, "graph_bg"),
         )
 
-    def _place_rel_bg(self, active: bool) -> None:
+    def _rel_bg_color(self) -> str:
+        if self._relative_active:
+            return "buttons_active"
+        if self._rel_hover:
+            return "buttons_hover"
+        return "buttons"
+
+    def _refresh_rel_bg(self) -> None:
+        color = self._rel_bg_color()
+        if color == self._rel_bg_color_name:
+            return
+        self._rel_bg_color_name = color
         layout = L.graph_layout()
         rx, ry, rw, rh = layout["rel_btn"]
         rx, ry, rw, rh = self._s(rx), self._s(ry), self._s(rw), self._s(rh)
@@ -149,8 +162,7 @@ class GraphPanel:
             self.canvas.delete(self._rel_bg_id)
             self._rel_bg_id = None
         bg_id = rounded_item(
-            self.canvas, rx, ry, rw, rh, self._s(L.GRAPH_REL_RADIUS),
-            "buttons_active" if active else "buttons",
+            self.canvas, rx, ry, rw, rh, self._s(L.GRAPH_REL_RADIUS), color,
             tags=(self.TAG, "graph_rel_bg"),
         )
         if bg_id is not None:
@@ -196,6 +208,8 @@ class GraphPanel:
             self._s(rx), self._s(ry), self._s(rw), self._s(rh),
             "graph_hit_rel", self._on_rel_click, self._on_rel_long_press,
         )
+        self.canvas.tag_bind("graph_hit_rel", "<Enter>", self._on_rel_enter)
+        self.canvas.tag_bind("graph_hit_rel", "<Leave>", self._on_rel_leave)
         self.canvas.tag_raise("graph_hit_rel")
 
     def _bind_press_release(
@@ -268,19 +282,27 @@ class GraphPanel:
     def _on_graph_long_press(self) -> None:
         self.clear()
 
+    def _on_rel_enter(self, _event=None) -> None:
+        self._rel_hover = True
+        self._refresh_rel_bg()
+
+    def _on_rel_leave(self, _event=None) -> None:
+        self._rel_hover = False
+        self._refresh_rel_bg()
+
     def _on_rel_click(self) -> None:
         self._relative_active = True
         if self._buf:
             self._relative_offset = self._buf[-1]
         self._send_ble(COMMANDS["RELATIVE"])
-        self._place_rel_bg(True)
+        self._refresh_rel_bg()
         self.redraw()
 
     def _on_rel_long_press(self) -> None:
         self._relative_active = False
         self._relative_offset = 0.0
         self._send_ble(COMMANDS["RELATIVE_OFF"])
-        self._place_rel_bg(False)
+        self._refresh_rel_bg()
         self.redraw()
 
     def _plot_value(self, norm_value: float) -> float:
@@ -357,11 +379,7 @@ class GraphPanel:
         )
 
     def set_view_mode_hidden(self, hidden: bool) -> None:
-        """Show or hide the whole panel for the window view mode.
-
-        ``graph`` as a tag covers the trace item too, so the trace state is
-        re-applied afterwards instead of being forced on with the rest.
-        """
+        """The tag covers the trace too, so its state is re-applied after."""
         self._panel_hidden = hidden
         self.canvas.itemconfigure(self.TAG, state="hidden" if hidden else "normal")
         self._sync_trace_state()
