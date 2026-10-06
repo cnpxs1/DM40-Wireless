@@ -140,9 +140,8 @@ class DM40App:
     def disconnect_device(self) -> None:
         """Drop the BLE link and go back to the connect screen.
 
-        settings.json is deliberately left alone: target_mac / model_name stay
-        put, so reconnecting the same meter needs no re-selection. They are
-        only rewritten when a device is picked in complete_device_setup().
+        settings.json is left alone - the saved device reconnects without
+        re-selection.
         """
         self.ble.disconnect()
         self.show_connect_screen(auto_scan=True)
@@ -150,15 +149,12 @@ class DM40App:
     def on_close(self) -> None:
         """Hand the link back before the process goes away.
 
-        Without this the meter keeps waiting for a host that is already gone.
-
-        The wait below pumps Tk events on purpose. The BLE thread delivers each
-        measurement via ``root.after()``, which blocks until the main thread
-        services it - so sleeping here would stall that thread, the BLE loop
-        would never reach its `_paused` check, and the link would never drop.
+        Otherwise the meter waits for a host that is gone. The wait below pumps
+        Tk events on purpose: the BLE thread posts via ``root.after()``, so
+        sleeping here would stall it and the link would never drop.
         """
-        # An open dialog is waiting in wait_variable, which never returns once
-        # the window is gone - answer it first or the process hangs here.
+        # Answer an open dialog first: wait_variable never returns once the
+        # window is gone, and the process would hang here.
         cancel_pending()
         # A scale typed into the settings screen is still uncommitted here.
         self.settings_screen.commit_pending_scale()

@@ -71,11 +71,8 @@ def raise_click_hotspots(canvas: tk.Canvas) -> None:
 def make_scrollbar(master: tk.Misc, scale: float) -> ttk.Scrollbar:
     """Vertical scrollbar coloured through the 'clam' theme.
 
-    The classic tk.Scrollbar cannot be coloured cross-platform: Windows draws it
-    with the native theme engine, which discards bg/troughcolor, so the same
-    options come out flat on X11 and system-styled on Windows. clam is the
-    built-in theme that honours them on both. Width follows arrowsize - clam
-    sizes the trough from its arrow elements.
+    The native tk.Scrollbar discards these colours on both platforms; clam
+    honours them.
     """
     style = ttk.Style(master)
     style.theme_use("clam")
@@ -104,12 +101,9 @@ def make_scrollbar(master: tk.Misc, scale: float) -> ttk.Scrollbar:
 class HoverGroup:
     """Hover state for a screen that rebuilds its rows.
 
-    The screen registers one entry per row - its box plus the hit tag it just
-    bound - and supplies ``on_change(previous, current)``, which it uses to
-    repaint both keys the way that screen paints. This class owns the
-    enter/leave bookkeeping and the post-rebuild restore, which re-checks the
-    pointer position: deleting the row under the cursor does not make Tk send
-    a <Leave>, so a remembered key alone would leave a stale hover behind.
+    Rows register a box and hit tag; ``on_change`` repaints the old and new key.
+    ``restore()`` re-checks the pointer after a rebuild - deleting the row under
+    the cursor does not raise <Leave>.
     """
 
     def __init__(
