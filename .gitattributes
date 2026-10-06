@@ -1,0 +1,9 @@
+# LF in the repository and in the working tree. The eol attribute overrides
+# core.autocrlf, which is set to true system-wide on some Windows machines -
+# without this, a checkout would bring text files back as CRLF.
+* text=auto eol=lf
+
+# cmd.exe mishandles LF-only batch files (labels, goto), so these keep CRLF in
+# the working tree. They still go into the repository as LF.
+*.bat text eol=crlf
+*.cmd text eol=crlf
