@@ -79,7 +79,7 @@ class SettingsScreen(tk.Frame):
         self._folder_focus_bind: str | None = None
         self._scale_entry: tk.Entry | None = None
         self._scale_hint_id: int | None = None
-        self._scale_click_bind: str | None = None
+        self._scale_item_id: int | None = None   # canvas window item; survives rebuild()
         # Registered once: register() leaks a Tcl command per call.
         self._scale_vcmd = (self.register(self._scale_input_ok), "%P")
 
@@ -130,7 +130,8 @@ class SettingsScreen(tk.Frame):
 
     def rebuild(self) -> None:
         self._close_lang_popup()
-        self._destroy_scale_entry()
+        # Another row's click rebuilds without a <FocusOut>; commit the value.
+        self._commit_scale()
         if self._title_id is not None:
             self.canvas.itemconfig(self._title_id, text=t("settings.title"))
         self.canvas.delete("settings_row")
@@ -222,25 +223,6 @@ class SettingsScreen(tk.Frame):
         for sequence, funcid in self._lang_binds:
             self.app.root.unbind(sequence, funcid)
         self._lang_binds.clear()
-
-    def _destroy_scale_entry(self) -> None:
-        """Commit, then destroy the widget; a canvas item does not own it.
-
-        A rebuild started by a click on another row never gives the entry a
-        <FocusOut>, so the typed value is taken first.
-        """
-        if self._scale_entry is not None:
-            self._commit_scale()
-        entry, self._scale_entry = self._scale_entry, None
-        self._scale_hint_id = None
-        if self._scale_click_bind is not None:
-            self.canvas.unbind("<Button-1>", self._scale_click_bind)
-            self._scale_click_bind = None
-        if entry is not None:
-            try:
-                entry.destroy()
-            except tk.TclError:
-                pass
 
     def _place_lang_popup(self) -> None:
         """Park the popup under the selector, in screen coordinates."""
@@ -553,35 +535,40 @@ class SettingsScreen(tk.Frame):
     ) -> None:
         """Label plus a text field, with a hint while a restart is pending.
 
-        No whole-row hit area: it would swallow the field's own clicks.
+        No whole-row hit area: it would swallow the field's own clicks. The
+        field is created once and reused - remapping it blinks on X11.
         """
         rx, ry, rw, rh, cy = self._row_frame(key, x, y, w, h, label, label_font)
-
-        entry = tk.Entry(
-            self.canvas,
-            bg=rgb_hex("buttons"), fg=rgb_hex("text_primary"),
-            insertbackground=rgb_hex("text_primary"),
-            highlightthickness=0, borderwidth=0, justify="center",
-            font=state_font, validate="key", validatecommand=self._scale_vcmd,
-        )
-        entry.insert(0, self._scale_text())
-        entry.bind("<Return>", self._commit_scale)
-        entry.bind("<FocusOut>", self._commit_scale)
 
         # Field hugs the right edge like the switch; hint grows leftwards from it.
         field_w = self._s(SL.WINDOW_SCALE_FIELD_W)
         field_x = rx + rw - self._s(SL.SETTINGS_ROW_MARGIN) - field_w
-        self.canvas.create_window(
-            field_x + field_w // 2, cy, anchor="center",
-            width=field_w, height=self._s(SL.SETTINGS_ROW_H - 16),
-            window=entry, tags=("settings_row", f"settings_entry_{key}"),
-        )
-        self._scale_entry = entry
-        # Tk keeps the focus on the entry when a canvas item is clicked, so
-        # <FocusOut> alone would leave a typed value uncommitted.
-        self._scale_click_bind = self.canvas.bind(
-            "<Button-1>", self._commit_scale, add="+",
-        )
+
+        # Also the "field built" flag; set together with _scale_entry.
+        if self._scale_item_id is None:
+            entry = tk.Entry(
+                self.canvas,
+                bg=rgb_hex("buttons"), fg=rgb_hex("text_primary"),
+                insertbackground=rgb_hex("text_primary"),
+                highlightthickness=0, borderwidth=0, justify="center",
+                font=state_font, validate="key", validatecommand=self._scale_vcmd,
+            )
+            entry.insert(0, self._scale_text())
+            entry.bind("<Return>", self._commit_scale)
+            entry.bind("<FocusOut>", self._commit_scale)
+            self._scale_entry = entry
+            # No "settings_row" tag: rebuild() must keep this item alive.
+            self._scale_item_id = self.canvas.create_window(
+                field_x + field_w // 2, cy, anchor="center",
+                width=field_w, height=self._s(SL.SETTINGS_ROW_H - 16),
+                window=entry, tags=(f"settings_entry_{key}",),
+            )
+            # Tk keeps the focus on the entry when a canvas item is clicked, so
+            # <FocusOut> alone would leave a typed value uncommitted.
+            self.canvas.bind("<Button-1>", self._commit_scale, add="+")
+        else:
+            self.canvas.coords(self._scale_item_id, field_x + field_w // 2, cy)
+
         self._scale_hint_id = self.canvas.create_text(
             field_x - self._s(SL.SETTINGS_SWITCH_GAP), cy,
             text=self._scale_hint_text(), anchor="e", font=state_font,
