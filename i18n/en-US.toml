@@ -84,6 +84,8 @@ state_off = "OFF"
 console_connecting = "Looking for device {mac}..."
 console_connected = "Connected"
 console_disconnected = "Error/Disconnected: {error} Reconnecting..."
+console_disconnected_user = "Disconnected"
+console_connection_lost = "Connection lost, reconnecting..."
 
 # settings.json problems at startup
 [config]

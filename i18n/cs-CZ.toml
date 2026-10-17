@@ -84,6 +84,8 @@ state_off = "VYP"
 console_connecting = "Hledám zařízení {mac}..."
 console_connected = "Připojeno"
 console_disconnected = "Chyba/Odpojeno: {error} Připojuji znovu..."
+console_disconnected_user = "Odpojeno"
+console_connection_lost = "Spojení ztraceno, připojuji znovu..."
 
 # Problémy se settings.json při spuštění
 [config]

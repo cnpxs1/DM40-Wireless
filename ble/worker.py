@@ -186,6 +186,10 @@ class BleWorker:
                             except asyncio.TimeoutError:
                                 pass
                     await asyncio.sleep(0.01)
+                if self._paused:
+                    print(t("ble.console_disconnected_user"))
+                else:
+                    print(t("ble.console_connection_lost"))
             except Exception as exc:
                 # str(exc) is empty for some exceptions; keep the class name
                 # so the D-Bus error type survives.

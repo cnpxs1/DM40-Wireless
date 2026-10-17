@@ -84,6 +84,8 @@ state_off = "关"
 console_connecting = "正在查找设备 {mac}..."
 console_connected = "已连接"
 console_disconnected = "错误/已断开：{error} 正在重连..."
+console_disconnected_user = "已断开"
+console_connection_lost = "连接丢失，正在重连..."
 
 # 启动时的 settings.json 问题
 [config]
