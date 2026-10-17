@@ -25,9 +25,12 @@ The first-line comment ``# language name: <display name>`` is shown in the Setti
 
 from __future__ import annotations
 
+import locale
+import os
+import sys
 import tomllib
 from pathlib import Path
-from typing import Any
+from typing import Any, cast
 
 
 def i18n_dir() -> Path:
@@ -222,6 +225,64 @@ def get_i18n() -> _I18n:
         _i18n_instance = _I18n()
     assert _i18n_instance is not None
     return _i18n_instance
+
+
+def _system_locale() -> str:
+    """OS locale tag (BCP 47 on Windows, LANG-style elsewhere)."""
+    if sys.platform == "win32":
+        try:
+            import winreg
+            with winreg.OpenKey(
+                winreg.HKEY_CURRENT_USER, r"Control Panel\International",
+            ) as key:
+                value, _kind = winreg.QueryValueEx(key, "LocaleName")
+                if value:
+                    return str(value)
+        except (ImportError, OSError, ValueError):
+            pass
+    for var in ("LC_ALL", "LC_MESSAGES", "LANG"):
+        value = os.environ.get(var, "").strip()
+        if value and value not in ("C", "POSIX"):
+            return value
+    # Windows' getlocale() names the language in words ("Chinese (Simplified)_China"),
+    # which cannot be matched; getdefaultlocale() still returns the code ("zh_CN").
+    get_default = cast(Any, getattr(locale, "getdefaultlocale", None))
+    if get_default is not None:
+        try:
+            name = get_default()[0] or ""
+        except (ValueError, OSError):
+            name = ""
+        if name:
+            return name
+    try:
+        return locale.getlocale()[0] or ""
+    except (ValueError, OSError):
+        return ""
+
+
+def match_language(tag: str, available: dict[str, str]) -> str:
+    """Available code matching ``tag``; en-US when nothing matches."""
+    tag = (tag or "").split(".", 1)[0].split("@", 1)[0].replace("_", "-").strip().lower()
+    if not tag:
+        return "en-US"
+    for code in available:
+        if code.lower() == tag:
+            return code
+    parts = tag.split("-")
+    if len(parts) > 1:
+        region = parts[-1]
+        for code in available:
+            if code.lower().endswith("-" + region):
+                return code
+    for code in available:
+        if code.lower().split("-", 1)[0] == parts[0]:
+            return code
+    return "en-US"
+
+
+def system_language() -> str:
+    """Best installed language for the OS locale; en-US when none matches."""
+    return match_language(_system_locale(), get_i18n().available_languages())
 
 
 def toml_key(name: str) -> str:
