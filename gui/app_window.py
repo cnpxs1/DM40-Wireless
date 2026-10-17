@@ -1,9 +1,11 @@
 """Main application window – Main / Range / Settings screen switching."""
 
+import sys
 import threading
 import time
 
 import tkinter as tk
+from tkinter import messagebox
 
 from ble.worker import BleCallbacks, BleWorker
 from core.config import CMD_DISCOVERY, CMD_POLL
@@ -17,6 +19,9 @@ from gui.main_screen import MainScreen
 from gui.range_screen import RangeScreen
 from gui.raw_console import RawConsole
 from gui.settings import (
+    DEFAULTS,
+    ISSUE_UNKNOWN_LANGUAGE,
+    SettingsIssue,
     apply_saved_model,
     as_text,
     load_settings,
@@ -25,6 +30,7 @@ from gui.settings import (
     sanitize_settings,
     save_settings,
 )
+from gui.settings_notice import format_settings_issues
 from gui.connect_screen import ConnectScreen
 from gui.settings_screen import SettingsScreen
 from gui.theme import rgb_hex
@@ -36,18 +42,24 @@ _BACKGROUND_TX = frozenset({CMD_DISCOVERY, CMD_POLL, CMD_ID})
 class DM40App:
     def __init__(self, root: tk.Tk) -> None:
         self.root = root
-        self.settings = load_settings()
-        if sanitize_settings(self.settings):
-            save_settings(self.settings)    # persist the repaired values
+        self._settings_issues: list[SettingsIssue] = []
+        self.settings = load_settings(self._settings_issues)
+        # Repair in memory only; the startup prompt decides whether to write back.
+        sanitize_settings(self.settings, self._settings_issues)
         apply_saved_model(self.settings)
 
         # Initialize i18n from language in settings.json
-        lang = as_text(self.settings.get("language")) or "en-US"
+        lang = as_text(self.settings.get("language")) or DEFAULTS["language"]
         i18n = get_i18n()
         i18n.init(lang)
         if i18n.language and i18n.language != lang:
             self.settings["language"] = i18n.language
-            save_settings(self.settings)
+            self._settings_issues.append(SettingsIssue(
+                ISSUE_UNKNOWN_LANGUAGE, key="language",
+                value=lang, default=i18n.language,
+            ))
+        # Safe default: no disk writes until the user agrees to overwrite.
+        self.settings_writable = not self._settings_issues
         self.scale = resolve_window_scale(self.settings)
         self.mode_state = ModeState()
         for gid, opts in MODE_CYCLE_GROUPS:
@@ -128,7 +140,8 @@ class DM40App:
         self.settings["target_mac"] = device.address
         self.settings["model_name"] = device.model_name
         self.settings["device_counts"] = device.device_counts
-        save_settings(self.settings)
+        if self.settings_writable:
+            save_settings(self.settings)
         self.ble.set_target_mac(device.address)
         self.ble.resume()          # a previous disconnect left the loop paused
         if not self._ble_started:
@@ -145,6 +158,34 @@ class DM40App:
         """
         self.ble.disconnect()
         self.show_connect_screen(auto_scan=True)
+
+    def ask_settings_overwrite(self) -> None:
+        """Ask whether to overwrite a bad settings.json; No keeps this session in memory."""
+        if not self._settings_issues:
+            return
+        message = format_settings_issues(self._settings_issues)
+        try:
+            if sys.stdout is not None:
+                print(message)
+        except (OSError, ValueError):
+            pass
+        try:
+            if not self.root.winfo_exists():
+                return
+            message += "\n\n" + t("config.overwrite_ask")
+            if not messagebox.askyesno(t("config.title"), message, parent=self.root):
+                self.settings_writable = False
+                return
+            if save_settings(self.settings):
+                self._settings_issues.clear()
+                self.settings_writable = True
+            else:
+                self.settings_writable = False
+                messagebox.showwarning(
+                    t("config.title"), t("config.write_failed"), parent=self.root,
+                )
+        except tk.TclError:
+            self.settings_writable = False
 
     def on_close(self) -> None:
         """Hand the link back before the process goes away.
@@ -170,12 +211,10 @@ class DM40App:
         i18n = get_i18n()
         if not i18n.load_language(lang_code):
             return
-        # Atomic settings.json write (.tmp then replace, prevents corruption)
+        # A failed write does not block the UI refresh; the language applies now.
         self.settings["language"] = lang_code
-        from gui.settings import save_settings
-        if not save_settings(self.settings):
-            # Save failure does not block UI refresh; in-memory language still applies this session
-            pass
+        if self.settings_writable:
+            save_settings(self.settings)
         # Refresh UI
         self.root.title(t("app.title"))
         self._refresh_all_screens_i18n()
@@ -398,6 +437,7 @@ class DM40App:
             mac=self.ble.target_mac,
             model_name=MODEL.model_name,
             device_counts=MODEL.device_counts,
+            save=self.settings_writable,
         )
 
     def _on_measurement(self, m, data: bytes) -> None:
@@ -437,4 +477,6 @@ def run_app() -> None:
     root = tk.Tk()
     app = DM40App(root)
     root.protocol("WM_DELETE_WINDOW", app.on_close)
+    # after_idle: the first window is mapped before the modal prompt appears.
+    root.after_idle(app.ask_settings_overwrite)
     root.mainloop()

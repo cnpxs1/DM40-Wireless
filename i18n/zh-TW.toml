@@ -84,3 +84,17 @@ state_off = "關"
 console_connecting = "正在查找裝置 {mac}..."
 console_connected = "已連線"
 console_disconnected = "錯誤/已斷線：{error} 正在重連..."
+
+# 啟動時的 settings.json 問題
+[config]
+title = "設定檔問題"
+intro = "settings.json 未被修改。以下設定無法使用，本次執行將使用預設值："
+missing = "缺少 {count} 項設定：{keys}"
+more = "……另有 {count} 項"
+invalid = "{name}：{value} → {default}"
+legacy_moved = "{name} 已停用，本次執行將把它的值用於 {new_key}"
+legacy_dropped = "{name} 已停用，已忽略"
+file_problem = "settings.json 無法使用：{error}"
+unknown_language = "language：{value} 無法使用，使用 {default}"
+overwrite_ask = "是否使用預設設定覆寫 settings.json？選擇「否」後，本次執行的所有變更僅在記憶體中生效。"
+write_failed = "無法寫入 settings.json，本次執行的變更僅在記憶體中生效。"

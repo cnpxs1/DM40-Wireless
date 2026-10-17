@@ -84,3 +84,17 @@ state_off = "VYP"
 console_connecting = "Hledám zařízení {mac}..."
 console_connected = "Připojeno"
 console_disconnected = "Chyba/Odpojeno: {error} Připojuji znovu..."
+
+# Problémy se settings.json při spuštění
+[config]
+title = "Problém se souborem nastavení"
+intro = "Soubor settings.json nebyl změněn. Tyto hodnoty nelze použít, proto se v tomto spuštění použijí výchozí hodnoty:"
+missing = "Chybí {count} nastavení: {keys}"
+more = "…a další {count}"
+invalid = "{name}: {value} → {default}"
+legacy_moved = "{name} se již nepoužívá; jeho hodnota bude v tomto spuštění použita pro {new_key}"
+legacy_dropped = "{name} se již nepoužívá a byl ignorován"
+file_problem = "Soubor settings.json nelze použít: {error}"
+unknown_language = "language: {value} není dostupný jazyk, použije se {default}"
+overwrite_ask = "Přepsat settings.json výchozí konfigurací? Pokud zvolíte Ne, všechny změny v tomto spuštění zůstanou pouze v paměti."
+write_failed = "Soubor settings.json nelze zapsat; změny v tomto spuštění zůstanou pouze v paměti."

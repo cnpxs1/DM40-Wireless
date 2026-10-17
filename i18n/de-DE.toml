@@ -84,3 +84,17 @@ state_off = "AUS"
 console_connecting = "Suche Gerät {mac}..."
 console_connected = "Verbunden"
 console_disconnected = "Fehler/Getrennt: {error} Verbinde erneut..."
+
+# Probleme mit settings.json beim Start
+[config]
+title = "Problem mit der Einstellungsdatei"
+intro = "settings.json wurde nicht geändert. Diese Werte konnten nicht verwendet werden; für diese Sitzung gelten die Standardwerte:"
+missing = "{count} Einstellung(en) fehlen: {keys}"
+more = "…und {count} weitere"
+invalid = "{name}: {value} → {default}"
+legacy_moved = "{name} wird nicht mehr verwendet; sein Wert gilt in dieser Sitzung für {new_key}"
+legacy_dropped = "{name} wird nicht mehr verwendet und wurde ignoriert"
+file_problem = "settings.json konnte nicht verwendet werden: {error}"
+unknown_language = "language: {value} ist keine verfügbare Sprache, {default} wird verwendet"
+overwrite_ask = "settings.json mit der Standardkonfiguration überschreiben? Bei „Nein“ gelten alle Änderungen dieser Sitzung nur im Arbeitsspeicher."
+write_failed = "settings.json konnte nicht geschrieben werden; Änderungen gelten nur für diese Sitzung."

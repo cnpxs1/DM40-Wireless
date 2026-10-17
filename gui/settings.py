@@ -4,10 +4,12 @@ import json
 import math
 import re
 from copy import deepcopy
+from dataclasses import dataclass
 from typing import Any
 
 from core.config import SETTINGS_PATH
-from core.parsing import MODEL, apply_model
+from core.i18n import system_language
+from core.parsing import apply_model
 from core.protocol_constants import MODEL_TABLE
 
 DEFAULTS: dict[str, Any] = {
@@ -21,23 +23,48 @@ DEFAULTS: dict[str, Any] = {
     "mini_app": False,
     "always_on_top": False,
     "raw_console": False,
-    "language": "en-US",
+    "language": system_language(),
     "gui_font_ui": "Arial",
     "gui_font_data": "Arial",
 }
 
 
-# Hand-edited settings.json can hold the wrong type or an out-of-range number;
-# reading one must never raise, or the packaged build (no console) dies silently.
+# Never raise on a hand-edited file: the packaged build has no console.
 MIN_WINDOW_SCALE = 0.5
 
-# Repaired by type alone; target_mac, model_name and device_counts have their own
-# rules below. The bool settings are absent - bool() never fails on any value.
+# Type-only repairs; MAC, model pair and bools have their own checks below.
 _TEXT_KEYS = ("language", "gui_font_ui", "gui_font_data")
+_BOOL_KEYS = (
+    "show_graph", "debug_click_hotspots", "debug_display_layout",
+    "mini_app", "always_on_top", "raw_console",
+)
 
-# Six colon-separated hex pairs - Windows and BlueZ report the same form, so one
-# pattern covers both. Dashes are accepted for hand-edited files.
+# Six hex pairs; dashes are accepted because the file is hand-edited.
 _MAC_PATTERN = re.compile(r"^[0-9A-F]{2}([:-][0-9A-F]{2}){5}$", re.IGNORECASE)
+
+ISSUE_FILE = "file"
+ISSUE_MISSING = "missing"
+ISSUE_INVALID = "invalid"
+ISSUE_LEGACY_MOVED = "legacy_moved"
+ISSUE_LEGACY_DROPPED = "legacy_dropped"
+ISSUE_UNKNOWN_LANGUAGE = "unknown_language"
+
+
+@dataclass(frozen=True)
+class SettingsIssue:
+    """One settings.json problem; ``value`` was rejected in favour of ``default``."""
+
+    kind: str
+    key: str = ""
+    value: Any = None
+    default: Any = None
+    error: str = ""
+
+
+def _note(issues: list[SettingsIssue] | None, kind: str, **fields: Any) -> None:
+    """Append an issue when the caller asked for a report."""
+    if issues is not None:
+        issues.append(SettingsIssue(kind, **fields))
 
 
 def as_text(value: Any, default: str = "") -> str:
@@ -93,48 +120,83 @@ def model_device_counts(model_name: str) -> int:
     return 0
 
 
-def sanitize_settings(settings: dict) -> bool:
-    """Replace unusable values with their defaults, in place; True if changed.
+def _same(left: Any, right: Any) -> bool:
+    """Type-sensitive equality - True must not pass for 1, nor 1 for 1.0."""
+    return type(left) is type(right) and left == right
 
-    Repairing the file, not just the in-memory copy, leaves the next start clean
-    and shows the user which value was rejected.
-    """
-    fixed: dict[str, Any] = {
-        key: as_text(settings[key], DEFAULTS[key]) for key in _TEXT_KEYS if key in settings
-    }
+
+def sanitize_settings(
+    settings: dict,
+    issues: list[SettingsIssue] | None = None,
+) -> None:
+    """Replace unusable values in memory; reported issues are left to the caller."""
+    original = dict(settings)
+    fixed: dict[str, Any] = {}
+
+    def report_invalid(name: str, raw: Any, fallback: Any) -> None:
+        _note(issues, ISSUE_INVALID, key=name, value=raw, default=fallback)
+
+    for key in _TEXT_KEYS:
+        if key not in settings:
+            continue
+        value = original[key]
+        replacement = as_text(value) or DEFAULTS[key]
+        fixed[key] = replacement
+        if not isinstance(value, str) or not value.strip():
+            report_invalid(key, value, replacement)
 
     if "target_mac" in settings:
-        # A malformed address fails every connect and keeps DM40App from ever
-        # showing device setup - dropping it returns the user to the scan screen.
-        mac = as_text(settings["target_mac"])
-        fixed["target_mac"] = mac if is_valid_mac(mac) else ""
+        value = original["target_mac"]
+        mac = as_text(value)
+        # Blank is a valid "no saved device" state; only a malformed address is bad.
+        replacement = mac if is_valid_mac(mac) else ""
+        fixed["target_mac"] = replacement
+        if not (isinstance(value, str) and value.strip() == replacement):
+            report_invalid("target_mac", value, replacement)
 
     if "model_name" in settings:
-        # The model is what decides the counts, so the pair is repaired together.
-        model = resolve_model_name(settings["model_name"])
+        value = original["model_name"]
+        text = as_text(value)
+        model = resolve_model_name(value)
+        # Blank is a valid "not saved yet" state; wrong type or unknown name is not.
         fixed["model_name"] = model
-        fixed["device_counts"] = model_device_counts(model)
+        if not isinstance(value, str) or (text and not model):
+            report_invalid("model_name", value, model)
+        # The model decides the counts, so the pair is repaired together.
+        derived = model_device_counts(model)
+        fixed["device_counts"] = derived
+        # 0 is the "not set" default, so a key missing from the file is not an error.
+        if ("device_counts" in settings
+                and not _same(original["device_counts"], DEFAULTS["device_counts"])
+                and not _same(original["device_counts"], derived)):
+            report_invalid("device_counts", original["device_counts"], derived)
     elif "device_counts" in settings:
-        fixed["device_counts"] = as_int(
-            settings["device_counts"], DEFAULTS["device_counts"],
-        )
+        value = original["device_counts"]
+        if isinstance(value, int) and not isinstance(value, bool):
+            fixed["device_counts"] = value
+        else:
+            fixed["device_counts"] = DEFAULTS["device_counts"]
+            report_invalid("device_counts", value, DEFAULTS["device_counts"])
 
     if "window_scale" in settings:
-        fixed["window_scale"] = resolve_window_scale(settings)
+        value = original["window_scale"]
+        numeric = isinstance(value, (int, float)) and not isinstance(value, bool)
+        replacement = resolve_window_scale({"window_scale": value}) if numeric else 1.0
+        fixed["window_scale"] = replacement
+        if not numeric or not math.isfinite(value) or value < MIN_WINDOW_SCALE:
+            report_invalid("window_scale", value, replacement)
 
-    changed = any(settings.get(key) != value for key, value in fixed.items())
+    for key in _BOOL_KEYS:
+        if key not in settings:
+            continue
+        value = original[key]
+        if isinstance(value, bool):
+            fixed[key] = value
+        else:
+            fixed[key] = DEFAULTS[key]
+            report_invalid(key, value, DEFAULTS[key])
+
     settings.update(fixed)
-
-    # The old single font key moves to the ui slot; both old keys are dropped.
-    if "gui_font" in settings:
-        if not as_text(settings.get("gui_font_ui")):
-            settings["gui_font_ui"] = as_text(settings["gui_font"]) or DEFAULTS["gui_font_ui"]
-        del settings["gui_font"]
-        changed = True
-    if "gui_font_nonlatin" in settings:
-        del settings["gui_font_nonlatin"]
-        changed = True
-    return changed
 
 
 def apply_saved_model(settings: dict) -> None:
@@ -145,8 +207,15 @@ def apply_saved_model(settings: dict) -> None:
         apply_model(name, counts)
 
 
-def persist_device(settings: dict, *, mac: str, model_name: str, device_counts: int) -> bool:
-    """Saves MAC and model to settings; returns True on change."""
+def persist_device(
+    settings: dict,
+    *,
+    mac: str,
+    model_name: str,
+    device_counts: int,
+    save: bool = True,
+) -> bool:
+    """Update MAC and model in memory; with ``save=False`` nothing is written."""
     changed = False
     mac = mac.strip()
     if mac and settings.get("target_mac") != mac:
@@ -156,34 +225,57 @@ def persist_device(settings: dict, *, mac: str, model_name: str, device_counts: 
         settings["model_name"] = model_name
         settings["device_counts"] = device_counts
         changed = True
-    if changed:
+    if changed and save:
         save_settings(settings)
     return changed
 
 
-def load_settings() -> dict:
-    """Merged settings; a missing or incomplete file is written back complete."""
+def load_settings(issues: list[SettingsIssue] | None = None) -> dict:
+    """Merged settings; only a missing file is created, problems go to ``issues``."""
     try:
-        data = json.loads(SETTINGS_PATH.read_text(encoding="utf-8"))
+        raw = SETTINGS_PATH.read_text(encoding="utf-8")
     except FileNotFoundError:
-        data = {}                     # first run - everything below gets filled in
-    except (OSError, json.JSONDecodeError):
-        return deepcopy(DEFAULTS)     # a damaged file is left untouched
-    if not isinstance(data, dict):
+        fresh = deepcopy(DEFAULTS)
+        if not save_settings(fresh):
+            _note(issues, ISSUE_FILE, error="could not create the file")
+        return fresh
+    except (OSError, ValueError) as exc:
+        _note(issues, ISSUE_FILE, error=str(exc))
         return deepcopy(DEFAULTS)
+
+    try:
+        data = json.loads(raw)
+    except (ValueError, RecursionError):
+        # ValueError also covers JSONDecodeError, the int-digit limit and deep nesting.
+        _note(issues, ISSUE_FILE, error="invalid JSON")
+        return deepcopy(DEFAULTS)
+
+    if not isinstance(data, dict):
+        _note(issues, ISSUE_FILE, error="top level is not a JSON object")
+        return deepcopy(DEFAULTS)
+
+    # The old single font key moves to the ui slot; both old keys are dropped.
+    if "gui_font" in data:
+        if not as_text(data.get("gui_font_ui")):
+            data["gui_font_ui"] = as_text(data["gui_font"]) or DEFAULTS["gui_font_ui"]
+            _note(issues, ISSUE_LEGACY_MOVED, key="gui_font", value="gui_font_ui")
+        else:
+            _note(issues, ISSUE_LEGACY_DROPPED, key="gui_font")
+        del data["gui_font"]
+    if "gui_font_nonlatin" in data:
+        del data["gui_font_nonlatin"]
+        _note(issues, ISSUE_LEGACY_DROPPED, key="gui_font_nonlatin")
+
     merged = deepcopy(DEFAULTS)
     merged.update(data)
-    if any(key not in data for key in DEFAULTS):
-        save_settings(merged)         # write back the keys added since
+    for key in DEFAULTS:
+        if key not in data:
+            _note(issues, ISSUE_MISSING, key=key, default=DEFAULTS[key])
     return merged
 
 
 def save_settings(settings: dict) -> bool:
-    """Atomic write (temp then replace, avoids corruption).
-
-    Non-ASCII stays readable for hand-editing.
-    """
-    import tempfile
+    """Atomic write; non-ASCII stays readable for hand-editing."""
     tmp = SETTINGS_PATH.with_suffix(".tmp")
     try:
         tmp.write_text(
@@ -191,5 +283,9 @@ def save_settings(settings: dict) -> bool:
         )
         tmp.replace(SETTINGS_PATH)
         return True
-    except OSError:
+    except (OSError, ValueError, TypeError, RecursionError):
+        try:
+            tmp.unlink(missing_ok=True)
+        except OSError:
+            pass
         return False

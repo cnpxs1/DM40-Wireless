@@ -84,3 +84,17 @@ state_off = "OFF"
 console_connecting = "Looking for device {mac}..."
 console_connected = "Connected"
 console_disconnected = "Error/Disconnected: {error} Reconnecting..."
+
+# settings.json problems at startup
+[config]
+title = "Settings file problem"
+intro = "settings.json was not modified. These values could not be used, so this session runs with defaults:"
+missing = "{count} setting(s) missing: {keys}"
+more = "…and {count} more"
+invalid = "{name}: {value} → {default}"
+legacy_moved = "{name} is retired; its value is used for {new_key} this session"
+legacy_dropped = "{name} is retired and was ignored"
+file_problem = "settings.json could not be used: {error}"
+unknown_language = "language: {value} is not available, using {default}"
+overwrite_ask = "Overwrite settings.json with the default configuration? Choosing No keeps every change made this session in memory only."
+write_failed = "settings.json could not be written; changes are temporary for this session."
