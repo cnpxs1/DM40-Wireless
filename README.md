@@ -72,7 +72,7 @@ python -m pip install --upgrade pip
 python -m pip install -r requirements.txt
 ```
 
-- On first run, copy the settings template:
+- `settings.json` is created automatically on first run with the OS language. To start from the example file instead, copy it (its `language` is `en-US`):
 ```bash
 cp settings.example.json settings.json
 ```
@@ -200,9 +200,11 @@ The file lives next to the exe or in the project root. It is not committed to gi
 | `mini_app`          | Mini mode (boolean: false / true)                                                            |
 | `always_on_top`     | Always on top (boolean: false / true)                                                        |
 | `raw_console`       | RAW console (boolean: false / true)                                                          |
-| `language`          | UI language code matching a file in `i18n/` (e.g. `"en-US"`, `"zh-CN"`, default `"en-US"`)   |
+| `language`          | UI language code matching a file in `i18n/` (e.g. `"en-US"`, `"zh-CN"`); defaults to the OS language when installed, otherwise `"en-US"` |
 | `gui_font_ui`       | Font family for the UI texts (labels, buttons, dialogs), default `"Arial"`                    |
 | `gui_font_data`     | Font family for readings, graph scales and the range readout, default `"Arial"`               |
+
+A missing `settings.json` is created with every key on first run. If an existing file has a missing key, an unusable value or an unavailable language, the app runs with the repaired values and asks at startup whether to overwrite the file. Choosing No keeps every change made this session in memory only; otherwise changes made in the app are saved to the file.
 
 <br>
 
