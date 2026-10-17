@@ -67,32 +67,24 @@ def _note(issues: list[SettingsIssue] | None, kind: str, **fields: Any) -> None:
         issues.append(SettingsIssue(kind, **fields))
 
 
-def as_text(value: Any, default: str = "") -> str:
-    """``value`` stripped when it is a string, else ``default``."""
-    return value.strip() if isinstance(value, str) else default
+def as_text(value: Any) -> str:
+    """``value`` stripped when it is a string, else ``""``."""
+    return value.strip() if isinstance(value, str) else ""
 
 
-def as_int(value: Any, default: int = 0) -> int:
-    """``int(value)`` when that works, else ``default``."""
-    try:
-        return int(value)
-    except (TypeError, ValueError, OverflowError):
-        return default
-
-
-def resolve_window_scale(settings: dict) -> float:
+def resolve_window_scale(value: Any) -> float:
     """Window scale to use - always finite and large enough to be clickable.
 
     Not only a type check: json.loads accepts NaN/Infinity, and 0 or a negative
     scales the window away without raising until the geometry call.
     """
     try:
-        value = float(settings.get("window_scale", 1.0))
+        scale = float(value)
     except (TypeError, ValueError):
         return 1.0
-    if not math.isfinite(value) or value < MIN_WINDOW_SCALE:
+    if not math.isfinite(scale) or scale < MIN_WINDOW_SCALE:
         return 1.0
-    return value
+    return scale
 
 
 def is_valid_mac(value: str) -> bool:
@@ -131,78 +123,77 @@ def sanitize_settings(
 ) -> None:
     """Replace unusable values in memory; reported issues are left to the caller."""
     original = dict(settings)
-    fixed: dict[str, Any] = {}
-
-    def report_invalid(name: str, raw: Any, fallback: Any) -> None:
-        _note(issues, ISSUE_INVALID, key=name, value=raw, default=fallback)
 
     for key in _TEXT_KEYS:
         if key not in settings:
             continue
         value = original[key]
         replacement = as_text(value) or DEFAULTS[key]
-        fixed[key] = replacement
+        settings[key] = replacement
         if not isinstance(value, str) or not value.strip():
-            report_invalid(key, value, replacement)
+            _note(issues, ISSUE_INVALID, key=key, value=value, default=replacement)
 
     if "target_mac" in settings:
         value = original["target_mac"]
         mac = as_text(value)
         # Blank is a valid "no saved device" state; only a malformed address is bad.
         replacement = mac if is_valid_mac(mac) else ""
-        fixed["target_mac"] = replacement
+        settings["target_mac"] = replacement
         if not (isinstance(value, str) and value.strip() == replacement):
-            report_invalid("target_mac", value, replacement)
+            _note(issues, ISSUE_INVALID, key="target_mac", value=value, default=replacement)
 
     if "model_name" in settings:
         value = original["model_name"]
         text = as_text(value)
         model = resolve_model_name(value)
         # Blank is a valid "not saved yet" state; wrong type or unknown name is not.
-        fixed["model_name"] = model
+        settings["model_name"] = model
         if not isinstance(value, str) or (text and not model):
-            report_invalid("model_name", value, model)
+            _note(issues, ISSUE_INVALID, key="model_name", value=value, default=model)
         # The model decides the counts, so the pair is repaired together.
         derived = model_device_counts(model)
-        fixed["device_counts"] = derived
+        settings["device_counts"] = derived
         # 0 is the "not set" default, so a key missing from the file is not an error.
         if ("device_counts" in settings
                 and not _same(original["device_counts"], DEFAULTS["device_counts"])
                 and not _same(original["device_counts"], derived)):
-            report_invalid("device_counts", original["device_counts"], derived)
+            _note(issues, ISSUE_INVALID, key="device_counts",
+                  value=original["device_counts"], default=derived)
     elif "device_counts" in settings:
         value = original["device_counts"]
         if isinstance(value, int) and not isinstance(value, bool):
-            fixed["device_counts"] = value
+            settings["device_counts"] = value
         else:
-            fixed["device_counts"] = DEFAULTS["device_counts"]
-            report_invalid("device_counts", value, DEFAULTS["device_counts"])
+            settings["device_counts"] = DEFAULTS["device_counts"]
+            _note(issues, ISSUE_INVALID, key="device_counts",
+                  value=value, default=DEFAULTS["device_counts"])
 
     if "window_scale" in settings:
         value = original["window_scale"]
         numeric = isinstance(value, (int, float)) and not isinstance(value, bool)
-        replacement = resolve_window_scale({"window_scale": value}) if numeric else 1.0
-        fixed["window_scale"] = replacement
+        replacement = resolve_window_scale(value) if numeric else 1.0
+        settings["window_scale"] = replacement
         if not numeric or not math.isfinite(value) or value < MIN_WINDOW_SCALE:
-            report_invalid("window_scale", value, replacement)
+            _note(issues, ISSUE_INVALID, key="window_scale", value=value, default=replacement)
 
     for key in _BOOL_KEYS:
         if key not in settings:
             continue
         value = original[key]
         if isinstance(value, bool):
-            fixed[key] = value
+            settings[key] = value
         else:
-            fixed[key] = DEFAULTS[key]
-            report_invalid(key, value, DEFAULTS[key])
-
-    settings.update(fixed)
+            settings[key] = DEFAULTS[key]
+            _note(issues, ISSUE_INVALID, key=key, value=value, default=DEFAULTS[key])
 
 
 def apply_saved_model(settings: dict) -> None:
     """Loads the saved multimeter model (RANGE counts) before connecting."""
     name = as_text(settings.get("model_name"))
-    counts = as_int(settings.get("device_counts"))
+    try:
+        counts = int(settings.get("device_counts", 0))
+    except (TypeError, ValueError, OverflowError):
+        counts = 0
     if name and counts > 0:
         apply_model(name, counts)
 

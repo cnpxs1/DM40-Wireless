@@ -60,7 +60,7 @@ class DM40App:
             ))
         # Safe default: no disk writes until the user agrees to overwrite.
         self.settings_writable = not self._settings_issues
-        self.scale = resolve_window_scale(self.settings)
+        self.scale = resolve_window_scale(self.settings.get("window_scale"))
         self.mode_state = ModeState()
         for gid, opts in MODE_CYCLE_GROUPS:
             self.mode_state.register_group(gid, opts)
