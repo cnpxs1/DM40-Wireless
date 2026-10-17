@@ -122,13 +122,18 @@ if not defined MSVC_VARS (
     exit /b 1
 )
 
-echo Found: %MSVC_VARS%
-call "%MSVC_VARS%"
-if errorlevel 1 (
+set "MSVC_LOG=%TEMP%\dm40_msvc.log"
+> "%MSVC_LOG%" echo Found: %MSVC_VARS%
+call "%MSVC_VARS%" >> "%MSVC_LOG%" 2>&1
+set "MSVC_RC=%errorlevel%"
+powershell -NoProfile -Command "[Console]::OutputEncoding=[Text.Encoding]::UTF8; $p='%TEMP%\dm40_msvc.log'; if(Test-Path -LiteralPath $p){$lines=Get-Content -LiteralPath $p; $inner=$lines | Where-Object { $_ -match '^\*\* ' } | ForEach-Object { $_ -replace '^\*\* ?','' }; $w=72; foreach($t in $inner){ if($t.Length+2 -gt $w){$w=$t.Length+2} }; $top=[string][char]0x2554+(([string][char]0x2550)*$w)+[string][char]0x2557; $bot=[string][char]0x255A+(([string][char]0x2550)*$w)+[string][char]0x255D; $first=$true; foreach($l in $lines){ if($l -match '^\*+$'){ if($first){Write-Host -ForegroundColor Cyan $top; $first=$false}else{Write-Host -ForegroundColor Cyan $bot} } elseif($l -match '^\*\* ?(.*)$'){ $t=$matches[1].TrimEnd(); $pad=$w-$t.Length; $left=[int][math]::Floor($pad/2); $right=$pad-$left; Write-Host -NoNewline -ForegroundColor Cyan ([string][char]0x2551+(' '*$left)); Write-Host -NoNewline -ForegroundColor White $t; Write-Host -ForegroundColor Cyan ((' '*$right)+[string][char]0x2551) } else { Write-Host $l } }}"
+del "%MSVC_LOG%" >nul 2>&1
+if not "%MSVC_RC%"=="0" (
     echo %ERROR% MSVC environment setup failed.
     pause
     exit /b 1
 )
+echo.
 
 REM --- Nuitka build (onefile: single exe; slower cold start, AV may flag it) ---
 echo.
@@ -202,11 +207,7 @@ if exist "i18n" (
     echo %INFO% i18n\ copied to: dist\DM40 Wireless\i18n\
 )
 
-REM Copy settings template as default config
-if not exist "dist\DM40 Wireless\settings.json" (
-    copy /Y "settings.example.json" "dist\DM40 Wireless\settings.json" >nul 2>&1
-    echo %INFO% settings.example.json copied to: dist\DM40 Wireless\settings.json
-)
+REM settings.json is created by the app on first run (OS language), so leave it out.
 
 echo.
 echo %CYAN%╔════════════════════════════════════════════════════════════════════════╗%RST%
