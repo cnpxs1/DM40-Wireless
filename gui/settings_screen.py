@@ -20,6 +20,7 @@ from gui.theme import rgb_hex
 
 _HIT_GROUP = "settings_hits"   # lets rebuild() drop every hit area at once
 _POPUP_GAP = 2                 # px between the selector row and the dropdown
+_WHEEL_SEQUENCES = ("<MouseWheel>", "<Button-4>", "<Button-5>")
 
 
 def _inside(box: tuple[int, int, int, int], x: int, y: int) -> bool:
@@ -89,6 +90,10 @@ class SettingsScreen(tk.Frame):
     def _s(self, v: float) -> int:
         return int(v * self.scale)
 
+    def _current_language(self) -> str:
+        """Language code in settings, falling back to the OS default."""
+        return as_text(self.app.settings.get("language")) or DEFAULTS["language"]
+
     def _title_font(self) -> tuple[str, int, str]:
         return gui_font_ui(self.app.settings, self._s(SL.SETTINGS_TITLE_FONT), "normal")
 
@@ -106,9 +111,8 @@ class SettingsScreen(tk.Frame):
             0, 0, self._s(L.SCREEN_W), self._s(L.TOP_BAR_H),
             fill=rgb_hex("top_bar_background"), outline="", tags="settings_chrome",
         )
-        title = t("settings.title")
         self._title_id = self.canvas.create_text(
-            self._s(L.SCREEN_W // 2), self._s(SL.SETTINGS_TITLE_Y), text=title,
+            self._s(L.SCREEN_W // 2), self._s(SL.SETTINGS_TITLE_Y), text=t("settings.title"),
             fill=rgb_hex("text_primary"), anchor="center",
             font=self._title_font(), tags="settings_chrome",
         )
@@ -143,9 +147,8 @@ class SettingsScreen(tk.Frame):
         # Another row's click rebuilds without a <FocusOut>; commit the value.
         self._commit_scale()
         if self._title_id is not None:
-            title = t("settings.title")
             self.canvas.itemconfig(
-                self._title_id, text=title, font=self._title_font(),
+                self._title_id, text=t("settings.title"), font=self._title_font(),
             )
         self.canvas.delete("settings_row")
         self.canvas.delete(_HIT_GROUP)
@@ -214,7 +217,7 @@ class SettingsScreen(tk.Frame):
         )
 
     def _toggle(self, key: str) -> None:
-        self.app.settings[key] = not bool(self.app.settings.get(key, False))
+        self.app.settings[key] = not self.app.settings.get(key, False)
         if self.app.settings_writable:
             save_settings(self.app.settings)
         self.app.apply_settings()
@@ -306,12 +309,12 @@ class SettingsScreen(tk.Frame):
         folder.mkdir(parents=True, exist_ok=True)
         _reveal_in_file_manager(str(folder))
         self._unbind_folder_focus()
+        self._folder_focus_bind = self.app.root.bind("<FocusIn>", self._on_folder_focus, add="+")
 
-        def on_focus(_event=None) -> None:
-            self._unbind_folder_focus()
-            self.rebuild()
-
-        self._folder_focus_bind = self.app.root.bind("<FocusIn>", on_focus, add="+")
+    def _on_folder_focus(self, _event=None) -> None:
+        """Refresh once the app is focused again after the folder opened."""
+        self._unbind_folder_focus()
+        self.rebuild()
 
     def _unbind_folder_focus(self) -> None:
         """Drop the pending "app regained focus" hook, if one is armed.
@@ -324,7 +327,7 @@ class SettingsScreen(tk.Frame):
             self._folder_focus_bind = None
 
     def _select_language(self, lang_code: str) -> None:
-        current = as_text(self.app.settings.get("language")) or DEFAULTS["language"]
+        current = self._current_language()
         self._close_lang_popup()
         if lang_code == current:
             return
@@ -333,8 +336,8 @@ class SettingsScreen(tk.Frame):
     def _toggle_lang_popup(self, rx: int, ry: int, rw: int, rh: int) -> None:
         if self._lang_popup is not None:
             self._close_lang_popup()
-            return
-        self._show_lang_popup(rx, ry, rw, rh)
+        else:
+            self._show_lang_popup(rx, ry, rw, rh)
 
     def _show_lang_popup(self, rx: int, ry: int, rw: int, rh: int) -> None:
         """Open the language list as its own window, hung under the selector.
@@ -347,16 +350,20 @@ class SettingsScreen(tk.Frame):
         if not languages:
             return
 
-        current = as_text(self.app.settings.get("language")) or DEFAULTS["language"]
+        current = self._current_language()
         pad = self._s(SL.LANGUAGE_POPUP_PAD)
         item_h = self._s(SL.LANGUAGE_ITEM_H)
         item_gap = self._s(SL.LANGUAGE_ITEM_GAP)
         popup_w = max(rw, self._s(180))
+
+        def stack_height(count: int) -> int:
+            return count * item_h + max(0, count - 1) * item_gap
+
         # A longer list scrolls rather than growing - past the visible limit the
         # popup would simply run off the bottom of the screen.
         shown = min(len(languages), SL.LANGUAGE_MAX_VISIBLE)
-        list_h = shown * item_h + max(0, shown - 1) * item_gap
-        content_h = len(languages) * item_h + max(0, len(languages) - 1) * item_gap
+        list_h = stack_height(shown)
+        content_h = stack_height(len(languages))
         popup_h = pad * 2 + list_h
 
         popup = tk.Toplevel(self.app.root)
@@ -406,7 +413,7 @@ class SettingsScreen(tk.Frame):
             list_canvas.yview_scroll(step, "units")
 
         for container in (popup, list_canvas, inner):
-            for sequence in ("<MouseWheel>", "<Button-4>", "<Button-5>"):
+            for sequence in _WHEEL_SEQUENCES:
                 container.bind(sequence, on_wheel, add="+")
 
         margin = self._s(SL.SETTINGS_ROW_MARGIN)
@@ -446,7 +453,7 @@ class SettingsScreen(tk.Frame):
                 widget.bind("<Button-1>", on_pick)
                 widget.bind("<Enter>", on_enter)
                 widget.bind("<Leave>", on_leave)
-                for sequence in ("<MouseWheel>", "<Button-4>", "<Button-5>"):
+                for sequence in _WHEEL_SEQUENCES:
                     widget.bind(sequence, on_wheel, add="+")
 
         self._lang_popup = popup
@@ -471,7 +478,6 @@ class SettingsScreen(tk.Frame):
         self, x: int, y: int, w: int, h: int, key: str, label: str,
     ) -> None:
         rx, ry, rw, rh, cy = self._row_frame(key, x, y, w, h, label)
-        pad_l = self._s(SL.SETTINGS_ROW_MARGIN)
         pad_r = self._s(SL.SETTINGS_ROW_MARGIN)
 
         lang_icon = self.sprites.settings_sprite(
@@ -509,7 +515,7 @@ class SettingsScreen(tk.Frame):
         else:
             selector_right = rx + rw - pad_r
 
-        lang_code = as_text(self.app.settings.get("language")) or DEFAULTS["language"]
+        lang_code = self._current_language()
         display = get_i18n().available_languages().get(lang_code, lang_code)
         selector_left = rx + self._s(120)
         selector_top = ry + self._s(6)
