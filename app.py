@@ -7,6 +7,10 @@ _ROOT = Path(__file__).resolve().parent
 if str(_ROOT) not in sys.path:
     sys.path.insert(0, str(_ROOT))
 
+if "-debug" in sys.argv:
+    from core.debug_console import open_debug_console
+    open_debug_console()
+
 from gui.app_window import run_app
 
 if __name__ == "__main__":
