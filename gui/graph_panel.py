@@ -35,6 +35,7 @@ class GraphPanel:
         self._send_ble = on_ble_command
         self._root = root
         self._settings = settings
+        self._debug_hotspots = bool((settings or {}).get("debug_click_hotspots", False))
 
         self._buf: deque[float] = deque(maxlen=L.GRAPH_SAMPLE_MAX)
         self._pad = 0.0
@@ -214,6 +215,7 @@ class GraphPanel:
         self._bind_press_release(
             self._s(rx), self._s(ry), self._s(rw), self._s(rh),
             "graph_hit_rel", self._on_rel_click, self._on_rel_long_press,
+            debug_color="#c04080",
         )
         self.canvas.tag_bind("graph_hit_rel", "<Enter>", self._on_rel_enter)
         self.canvas.tag_bind("graph_hit_rel", "<Leave>", self._on_rel_leave)
@@ -225,10 +227,17 @@ class GraphPanel:
         tag: str,
         on_click: Callable[[], None] | None,
         on_long: Callable[[], None] | None,
+        *,
+        debug_color: str | None = None,
     ) -> None:
+        debug = self._debug_hotspots and debug_color is not None
         self.canvas.create_rectangle(
             x, y, x + w, y + h,
-            fill="", outline="", tags=(tag, CLICK_HOTSPOT_TAG, self.TAG),
+            fill=debug_color if debug else "",
+            outline=debug_color if debug else "",
+            width=1 if debug else 0,
+            stipple="gray50" if debug else "",
+            tags=(tag, CLICK_HOTSPOT_TAG, self.TAG),
         )
 
         def on_press(_event) -> None:
