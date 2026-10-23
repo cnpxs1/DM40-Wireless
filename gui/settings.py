@@ -23,6 +23,8 @@ DEFAULTS: dict[str, Any] = {
     "mini_app": False,
     "always_on_top": False,
     "raw_console": False,
+    "range_auto_return": True,
+    "mode_auto_return": False,
     "language": system_language(),
     "gui_font_ui": "Arial",
     "gui_font_data": "Arial",
@@ -37,7 +39,11 @@ _TEXT_KEYS = ("language", "gui_font_ui", "gui_font_data")
 _BOOL_KEYS = (
     "show_graph", "debug_click_hotspots", "debug_display_layout",
     "mini_app", "always_on_top", "raw_console",
+    "range_auto_return", "mode_auto_return",
 )
+
+# Added after the first release: an older file without them is still complete.
+OPTIONAL_KEYS = frozenset({"range_auto_return", "mode_auto_return"})
 
 # Six hex pairs; dashes are accepted because the file is hand-edited.
 _MAC_PATTERN = re.compile(r"^[0-9A-F]{2}([:-][0-9A-F]{2}){5}$", re.IGNORECASE)
@@ -70,6 +76,12 @@ def _note(issues: list[SettingsIssue] | None, kind: str, **fields: Any) -> None:
 def as_text(value: Any) -> str:
     """``value`` stripped when it is a string, else ``""``."""
     return value.strip() if isinstance(value, str) else ""
+
+
+def setting_bool(settings: dict, key: str, default: bool) -> bool:
+    """``settings[key]`` only when it is a real bool; hand-edited text keeps ``default``."""
+    value = settings.get(key)
+    return value if isinstance(value, bool) else default
 
 
 def resolve_window_scale(value: Any) -> float:
@@ -260,7 +272,7 @@ def load_settings(issues: list[SettingsIssue] | None = None) -> dict:
     merged = deepcopy(DEFAULTS)
     merged.update(data)
     for key in DEFAULTS:
-        if key not in data:
+        if key not in data and key not in OPTIONAL_KEYS:
             _note(issues, ISSUE_MISSING, key=key, default=DEFAULTS[key])
     return merged
 

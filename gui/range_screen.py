@@ -15,6 +15,7 @@ from core.ranges import RANGE_CAPABLE_KINDS, kind_from_mode_cmd_key, ranges_for_
 from gui import layout as L
 from gui import range_layout as RL
 from gui.assets import HoverGroup, bind_clickable, raise_click_hotspots
+from gui.settings import setting_bool
 from gui.sprites import SpriteCache
 from gui.fonts import gui_font_ui
 from gui.theme import rgb_hex
@@ -230,7 +231,8 @@ class RangeScreen(tk.Frame):
 
     def _pick(self, flag: int) -> None:
         self.app.ble.send_range_flag(flag)
-        self.app.show_main_screen()
+        if setting_bool(self.app.settings, "range_auto_return", True):
+            self.app.show_main_screen()
 
     def _pick_subtype(self, cmd_key: str) -> None:
         self.app.ble.send_command(COMMANDS[cmd_key])
@@ -243,4 +245,7 @@ class RangeScreen(tk.Frame):
             if kind != self._kind:
                 # Clear the highlight until the device reports the new range.
                 self.rebuild_for_kind(kind, -1)
-        self.raise_click_layer()
+        if setting_bool(self.app.settings, "mode_auto_return", False):
+            self.app.show_main_screen()
+        else:
+            self.raise_click_layer()

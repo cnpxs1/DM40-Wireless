@@ -200,6 +200,8 @@ The file lives next to the exe or in the project root. It is not committed to gi
 | `mini_app`          | Mini mode (boolean: false / true)                                                            |
 | `always_on_top`     | Always on top (boolean: false / true)                                                        |
 | `raw_console`       | RAW console (boolean: false / true)                                                          |
+| `range_auto_return` | Return to the main screen after picking a range on the RANGE screen (boolean, default `true`) |
+| `mode_auto_return`  | Return to the main screen after picking a measurement mode on the RANGE screen (boolean, default `false`) |
 | `language`          | UI language code matching a file in `i18n/` (e.g. `"en-US"`, `"zh-CN"`); defaults to the OS language when installed, otherwise `"en-US"` |
 | `gui_font_ui`       | Font family for the UI texts (labels, buttons, dialogs), default `"Arial"`                    |
 | `gui_font_data`     | Font family for readings, graph scales and the range readout, default `"Arial"`               |
