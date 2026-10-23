@@ -5,7 +5,6 @@ from __future__ import annotations
 import contextlib
 import sys
 import tkinter as tk
-from typing import Any
 
 DEFAULT_CAPTION = "#292C31"
 DEFAULT_TEXT = "#F7F7F7"
@@ -28,11 +27,11 @@ def _hwnd(root: tk.Tk) -> int | None:
 
     with contextlib.suppress(Exception):
         # windll exists on Windows only, and typeshed does not model it.
-        user32: Any = ctypes.windll.user32
+        user32 = ctypes.windll.user32  # type: ignore[attr-defined]
         wid = root.winfo_id()
         if not wid:
             return None
-        return user32.GetParent(wid) or wid
+        return user32.GetParent(wid) or wid  # type: ignore[attr-defined]
     return None
 
 
@@ -42,8 +41,8 @@ def _set_dwm_attr(hwnd: int, attr: int, value: int) -> None:
 
     with contextlib.suppress(Exception):
         # windll exists on Windows only, and typeshed does not model it.
-        dwmapi: Any = ctypes.windll.dwmapi
-        dwmapi.DwmSetWindowAttribute(
+        dwmapi = ctypes.windll.dwmapi  # type: ignore[attr-defined]
+        dwmapi.DwmSetWindowAttribute(  # type: ignore[attr-defined]
             hwnd, attr, ctypes.byref(ctypes.c_int(value)), ctypes.sizeof(ctypes.c_int),
         )
 
