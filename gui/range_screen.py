@@ -44,6 +44,7 @@ class RangeScreen(tk.Frame):
         self.canvas = tk.Canvas(self, width=w, height=h, highlightthickness=0, bg=rgb_hex("background"))
         self.canvas.pack()
 
+        self._kind: str | None = None
         self._active_flag = 0
         self._title_id: int | None = None
         self._back_sprite_id: int | None = None
@@ -98,6 +99,7 @@ class RangeScreen(tk.Frame):
         )
 
     def rebuild_for_kind(self, kind: str | None, active_flag: int = 0) -> None:
+        self._kind = kind
         self._active_flag = active_flag
         self.canvas.delete("range_btn")
         self.canvas.delete("range_subtype")
@@ -218,6 +220,14 @@ class RangeScreen(tk.Frame):
         if bg is not None:
             self.canvas.itemconfig(bg.item, fill=rgb_hex(self._range_bg_color(key)))
 
+    def update_from_device(self, kind: str | None, flag: int) -> None:
+        """Follow the meter's mode and range while this screen is on display."""
+        flags = {f for _label, f in ranges_for_kind(kind, MODEL.model_name)}
+        if kind != self._kind:
+            self.rebuild_for_kind(kind, flag if flag in flags else -1)
+        elif flag in flags and flag != self._active_flag:
+            self.rebuild_for_kind(kind, flag)
+
     def _pick(self, flag: int) -> None:
         self.app.ble.send_range_flag(flag)
         self.app.show_main_screen()
@@ -230,5 +240,7 @@ class RangeScreen(tk.Frame):
             self.app.mode_state.last_kind = kind
             self.app.mode_state.sync_from_kind(kind)
             self.app.main_screen.refresh_mode_buttons(self.app.mode_state)
-            self.rebuild_for_kind(kind, self._active_flag)
+            if kind != self._kind:
+                # Clear the highlight until the device reports the new range.
+                self.rebuild_for_kind(kind, -1)
         self.raise_click_layer()

@@ -468,6 +468,11 @@ class DM40App:
         if not m.hold:
             if self.mode_state.apply_notify(m.kind):
                 self.main_screen.refresh_mode_buttons(self.mode_state)
+        if self._current_screen == "range":
+            # apply_notify() has already dropped echoes of a local mode switch.
+            self.range_screen.update_from_device(
+                self.mode_state.get_active_kind(), self._last_range_flag,
+            )
         rng = range_label_from_packet(data, m.range)
         trace_key = data[5] if len(data) > 5 else 0
         self.main_screen.update_measurement(m, rng, trace_key)

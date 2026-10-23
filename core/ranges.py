@@ -59,7 +59,7 @@ def range_display_label(flag: int, model_name: str) -> str:
     return rng
 
 
-def ranges_for_kind(kind: str, model_name: str) -> list[tuple[str, int]]:
+def ranges_for_kind(kind: str | None, model_name: str) -> list[tuple[str, int]]:
     if kind not in RANGE_CAPABLE_KINDS:
         return []
     items: list[tuple[str, int]] = []
