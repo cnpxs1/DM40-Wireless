@@ -162,6 +162,7 @@ REM is all PNG. PIL's Image.init() skips plugins whose import fails, so it is sa
   --include-data-files=i18n/en-US.toml=i18n/en-US.toml ^
   --include-package=bleak ^
   --include-package=winrt ^
+  --include-package-data=winrt ^
   --output-dir=dist ^
   --output-filename="DM40 Wireless.exe" ^
   --assume-yes-for-downloads ^
