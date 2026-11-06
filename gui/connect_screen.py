@@ -99,9 +99,21 @@ class ConnectScreen(tk.Frame):
 
     def _set_status(self, text: str) -> None:
         if self._status_id is not None:
+            # Measure in the centred layout first: with anchor="n" left over
+            # from the previous message the bbox top never crosses the title.
             self.canvas.itemconfigure(
                 self._status_id, text=text,
                 font=gui_font_ui(self.app.settings, self._s(CL.SETUP_STATUS_FONT), "normal"),
+                anchor="center",
+            )
+            # Long errors wrap to many lines; centred they grow upwards over
+            # the title, so switch to top-anchored once they cross it.
+            bbox = self.canvas.bbox(self._status_id)
+            overlaps_title = bbox is not None and bbox[1] < self._s(
+                CL.SETUP_TITLE_Y + CL.SETUP_TITLE_FONT
+            )
+            self.canvas.itemconfigure(
+                self._status_id, anchor="n" if overlaps_title else "center",
             )
 
     def _top_bar_icon(self, name: str, max_w: int) -> tk.PhotoImage | None:
