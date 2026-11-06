@@ -97,24 +97,39 @@ class ConnectScreen(tk.Frame):
             group="connect_chrome",
         )
 
-    def _set_status(self, text: str) -> None:
-        if self._status_id is not None:
-            # Measure in the centred layout first: with anchor="n" left over
-            # from the previous message the bbox top never crosses the title.
-            self.canvas.itemconfigure(
-                self._status_id, text=text,
-                font=gui_font_ui(self.app.settings, self._s(CL.SETUP_STATUS_FONT), "normal"),
-                anchor="center",
+    def _set_status(self, text: str, *, spaced: bool = False) -> None:
+        if self._status_id is None:
+            return
+        size = CL.SETUP_ERROR_FONT if spaced else CL.SETUP_STATUS_FONT
+        font = gui_font_ui(self.app.settings, self._s(size), "normal")
+        # Measure centred: a leftover top anchor would skew the bbox.
+        self.canvas.itemconfigure(
+            self._status_id, text=text, font=font, anchor="center",
+            width=self._s(CL.SETUP_STATUS_MAX_W),
+        )
+        self.canvas.coords(
+            self._status_id, self._s(L.SCREEN_W // 2), self._s(CL.SETUP_STATUS_Y),
+        )
+        if spaced:
+            # Error block one line below the hint.
+            self.canvas.itemconfigure(self._status_id, anchor="n")
+            self.canvas.coords(
+                self._status_id,
+                self._s(L.SCREEN_W // 2),
+                self._s(CL.SETUP_HINT_Y + CL.SETUP_ERROR_FONT + 12),
             )
-            # Long errors wrap to many lines; centred they grow upwards over
-            # the title, so switch to top-anchored once they cross it.
-            bbox = self.canvas.bbox(self._status_id)
-            overlaps_title = bbox is not None and bbox[1] < self._s(
-                CL.SETUP_TITLE_Y + CL.SETUP_TITLE_FONT
+            return
+        bbox = self.canvas.bbox(self._status_id)
+        # Long messages can grow upwards over the title.
+        if bbox is not None and bbox[1] < self._s(CL.SETUP_TITLE_Y + CL.SETUP_TITLE_FONT):
+            self.canvas.itemconfigure(self._status_id, anchor="n")
+            self.canvas.coords(
+                self._status_id,
+                self._s(L.SCREEN_W // 2),
+                self._s(CL.SETUP_TITLE_Y + CL.SETUP_TITLE_FONT + 2),
             )
-            self.canvas.itemconfigure(
-                self._status_id, anchor="n" if overlaps_title else "center",
-            )
+        else:
+            self.canvas.itemconfigure(self._status_id, anchor="center")
 
     def _top_bar_icon(self, name: str, max_w: int) -> tk.PhotoImage | None:
         return self.sprites.top_bar(
@@ -274,7 +289,7 @@ class ConnectScreen(tk.Frame):
         self._selected = 0 if devices else -1
         self._rebuild_device_list()
         if error:
-            self._set_status(t("setup.status_scan_error", error=error))
+            self._set_status(t("setup.status_scan_error", error=error), spaced=True)
         elif not devices:
             self._set_status(t("setup.status_no_device"))
         elif len(devices) == 1:

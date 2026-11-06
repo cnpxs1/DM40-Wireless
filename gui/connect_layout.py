@@ -8,6 +8,7 @@ SETUP_HINT_Y = 52
 SETUP_HINT_FONT = 12
 SETUP_STATUS_Y = 76
 SETUP_STATUS_FONT = 12
+SETUP_ERROR_FONT = 11
 SETUP_STATUS_MAX_W = SCREEN_W - 20  # wrap width – 10 px margin each side
 SETUP_LIST_MARGIN = 5
 SETUP_LIST_TOP = 106   # below the tallest (3-line) status text
