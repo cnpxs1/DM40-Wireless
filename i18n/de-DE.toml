@@ -8,7 +8,7 @@ title = "DM40 Wireless"
 # Verbindung
 [setup]
 title = "Verbinden"
-hint = "Bluetooth am DM40 aktivieren, dann Suchen tippen."
+hint = "Stellen Sie sicher, dass Bluetooth am Computer und am DM40 aktiviert ist."
 status_initial = "Tippen Sie auf Suchen für DM40A / DM40B / DM40C."
 status_scanning = "Suche DM40A / DM40B / DM40C…"
 status_scan_error = "Suche fehlgeschlagen: {error}"

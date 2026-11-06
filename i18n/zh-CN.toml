@@ -8,7 +8,7 @@ title = "DM40 Wireless"
 # 连接界面
 [setup]
 title = "连接"
-hint = "在您的DM40上启用蓝牙，然后点击搜索。"
+hint = "请确认电脑和 DM40 的蓝牙均已开启。"
 status_initial = "点击搜索以查找 DM40A / DM40B / DM40C。"
 status_scanning = "正在搜索 DM40A / DM40B / DM40C…"
 status_scan_error = "搜索失败：{error}"

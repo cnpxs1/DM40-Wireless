@@ -8,7 +8,7 @@ title = "DM40 Wireless"
 # Connection
 [setup]
 title = "Connect"
-hint = "Enable Bluetooth on your DM40, then tap Search."
+hint = "Make sure Bluetooth is on for both your computer and the DM40."
 status_initial = "Tap Search to find DM40A / DM40B / DM40C."
 status_scanning = "Scanning for DM40A / DM40B / DM40C…"
 status_scan_error = "Scan failed: {error}"

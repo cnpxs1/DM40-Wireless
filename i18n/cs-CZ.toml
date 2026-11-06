@@ -8,7 +8,7 @@ title = "DM40 Wireless"
 # Připojení
 [setup]
 title = "Připojení"
-hint = "Zapněte Bluetooth na DM40 a klepněte na Hledat."
+hint = "Ujistěte se, že je Bluetooth zapnutý v počítači i na DM40."
 status_initial = "Klepněte na Hledat pro DM40A / DM40B / DM40C."
 status_scanning = "Hledám DM40A / DM40B / DM40C…"
 status_scan_error = "Hledání selhalo: {error}"
